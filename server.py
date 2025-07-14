@@ -1,17 +1,17 @@
+# server.py
 import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
-# ─── 앱 설정 ───────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "orders.db")
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
 
-# ─── DB 초기화 ───────────────────────────────────────────────
+# ─── DB 초기화 ─────────────────────────────────────────────
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 c = conn.cursor()
 c.execute("""
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS orders (
 """)
 conn.commit()
 
-# ─── 정적 파일 서빙 ───────────────────────────────────────────
+# ─── 정적 파일 서빙 ─────────────────────────────────────────
 @app.route("/")
 def serve_index():
     return send_from_directory(BASE_DIR, "index.html")
@@ -45,18 +45,16 @@ def list_orders():
         "FROM orders ORDER BY id DESC"
     )
     rows = c.fetchall()
-    orders = []
-    for r in rows:
-        orders.append({
-            "id":        r[0],
-            "timestamp": r[1],
-            "item":      r[2],
-            "quantity":  r[3],
-            "toppings":  r[4].split(",") if r[4] else [],
-            "deliverer": r[5],
-            "address":   r[6],
-            "completed": bool(r[7])
-        })
+    orders = [{
+        "id": r[0],
+        "timestamp": r[1],
+        "item": r[2],
+        "quantity": r[3],
+        "toppings": r[4].split(",") if r[4] else [],
+        "deliverer": r[5],
+        "address": r[6],
+        "completed": bool(r[7])
+    } for r in rows]
     return jsonify(orders), 200
 
 # ─── 주문 등록 ───────────────────────────────────────────────
@@ -66,7 +64,8 @@ def create_order():
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     toppings = ",".join(data.get("toppings", []))
     c.execute(
-        "INSERT INTO orders (timestamp, item, quantity, toppings, deliverer, address) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO orders (timestamp, item, quantity, toppings, deliverer, address) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
         (ts, data["item"], data["quantity"], toppings, data["deliverer"], data["address"])
     )
     conn.commit()
@@ -76,6 +75,13 @@ def create_order():
 @app.route("/api/orders/<int:order_id>/complete", methods=["POST"])
 def complete_order(order_id):
     c.execute("UPDATE orders SET completed = 1 WHERE id = ?", (order_id,))
+    conn.commit()
+    return jsonify(status="ok"), 200
+
+# ─── 주문 완료 취소 ───────────────────────────────────────────
+@app.route("/api/orders/<int:order_id>/uncomplete", methods=["POST"])
+def uncomplete_order(order_id):
+    c.execute("UPDATE orders SET completed = 0 WHERE id = ?", (order_id,))
     conn.commit()
     return jsonify(status="ok"), 200
 
