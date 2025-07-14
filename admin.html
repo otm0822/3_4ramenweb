@@ -1,165 +1,110 @@
-<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>📋 주문 관리</title>
-  <!-- Bootstrap CSS -->
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"/>
   <style>
-    body { font-family:sans-serif; padding:1rem; }
-    #salesSummary { font-weight:bold; margin:1rem 0; }
-    .tab-content { margin-top:1rem; }
-    table { width:100%; }
-    th, td { text-align:center; }
+    body{font-family:sans-serif;padding:1rem;margin:0;}
+    h1{text-align:center;margin-bottom:1rem;}
+    .half{width:50%;float:left;padding:0 0.5rem;box-sizing:border-box;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{text-align:center;padding:0.4rem;border:1px solid #aaa;}
+    .btn-wrap{margin-top:1rem;}
   </style>
 </head>
 <body>
-  <h1 class="text-center">📋 주문 관리</h1>
-  <div class="container">
-
-    <!-- Nav tabs -->
-    <ul class="nav nav-tabs" id="adminTabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab">현재 주문</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">주문 완료됨</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link" id="analytics-tab" data-bs-toggle="tab" data-bs-target="#analytics" type="button" role="tab">매출 분석</button>
-      </li>
-    </ul>
-
-    <!-- Tab panes -->
-    <div class="tab-content">
-
-      <!-- 현재 주문 -->
-      <div class="tab-pane fade show active" id="pending" role="tabpanel">
-        <table class="table table-sm table-bordered">
-          <thead><tr><th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소</th><th>완료</th></tr></thead>
-          <tbody id="pendingBody"></tbody>
-        </table>
+  <h1>📋 주문 관리</h1>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- 매장 주문 -->
+      <div class="half">
+        <h3>매장주문 (대기)</h3>
+        <table><thead><tr>
+          <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>테이블</th><th>완료</th>
+        </tr></thead><tbody id="pendingDinein"></tbody></table>
       </div>
-
-      <!-- 주문 완료됨 -->
-      <div class="tab-pane fade" id="completed" role="tabpanel">
-        <table class="table table-sm table-bordered">
-          <thead><tr><th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소</th><th>취소</th></tr></thead>
-          <tbody id="completedBody"></tbody>
-        </table>
-      </div>
-
-      <!-- 매출 분석 -->
-      <div class="tab-pane fade" id="analytics" role="tabpanel">
-        <div id="salesSummary">총 매출: 0원</div>
-        <canvas id="byItemChart" height="200"></canvas>
-        <canvas id="byDayChart" height="200" class="mt-4"></canvas>
+      <!-- 배달 주문 -->
+      <div class="half">
+        <h3>배달주문 (대기)</h3>
+        <table><thead><tr>
+          <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소</th><th>완료</th>
+        </tr></thead><tbody id="pendingDelivery"></tbody></table>
       </div>
     </div>
-
-    <button class="btn btn-secondary mt-3" onclick="location.href='/'">← 주문 화면으로 돌아가기</button>
+    <div class="row btn-wrap">
+      <div class="half">
+        <h3>매장주문 (완료)</h3>
+        <table><thead><tr>
+          <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>테이블</th><th>취소</th>
+        </tr></thead><tbody id="completedDinein"></tbody></table>
+      </div>
+      <div class="half">
+        <h3>배달주문 (완료)</h3>
+        <table><thead><tr>
+          <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소</th><th>취소</th>
+        </tr></thead><tbody id="completedDelivery"></tbody></table>
+      </div>
+    </div>
   </div>
+  <button class="btn btn-secondary mt-3" onclick="location.href='/'">← 주문 화면으로 돌아가기</button>
 
-  <!-- Bootstrap JS & Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const menuPrices = {
-      "기본 라면":4000, "치즈 라면":4500,
-      "떡 라면":4500, "만두 라면":4500,
-      "랜덤 라면":4300, "햇반":1500
-    };
-    const toppingPrices = { 계란:700, 파:700, 김치:700 };
-
-    async function loadData(){
+    async function loadAdmin(){
       const res = await fetch("/api/orders");
       const os  = await res.json();
-      const pending   = os.filter(o=>!o.completed);
-      const completed = os.filter(o=>o.completed);
+      const pi = os.filter(o=>!o.completed && o.orderType==="dinein");
+      const pd = os.filter(o=>!o.completed && o.orderType==="delivery");
+      const ci = os.filter(o=> o.completed && o.orderType==="dinein");
+      const cd = os.filter(o=> o.completed && o.orderType==="delivery");
 
-      // 현재 주문
-      document.getElementById("pendingBody").innerHTML = pending.map(o=>`
+      document.getElementById("pendingDinein").innerHTML = pi.map(o=>`
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
-          <td>${o.toppings.join(",")}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-success" data-id="${o.id}">완료</button>
-          </td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td><td>${o.deliverer}</td><td>${o.address}</td>
+          <td><button class="btn btn-sm btn-success" data-id="${o.id}">완료</button></td>
+        </tr>
+      `).join("");
+      document.getElementById("pendingDelivery").innerHTML = pd.map(o=>`
+        <tr>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td><td>${o.deliverer}</td><td>${o.address}</td>
+          <td><button class="btn btn-sm btn-success" data-id="${o.id}">완료</button></td>
+        </tr>
+      `).join("");
+      document.getElementById("completedDinein").innerHTML = ci.map(o=>`
+        <tr>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td><td>${o.deliverer}</td><td>${o.address}</td>
+          <td><button class="btn btn-sm btn-warning" data-id="${o.id}">취소</button></td>
+        </tr>
+      `).join("");
+      document.getElementById("completedDelivery").innerHTML = cd.map(o=>`
+        <tr>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td><td>${o.deliverer}</td><td>${o.address}</td>
+          <td><button class="btn btn-sm btn-warning" data-id="${o.id}">취소</button></td>
         </tr>
       `).join("");
 
-      // 주문 완료됨
-      document.getElementById("completedBody").innerHTML = completed.map(o=>`
-        <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
-          <td>${o.toppings.join(",")}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning" data-id="${o.id}">취소</button>
-          </td>
-        </tr>
-      `).join("");
-
-      // 버튼 이벤트
-      document.querySelectorAll("#pendingBody .btn-success").forEach(btn=>{
+      // 완료/취소 버튼
+      document.querySelectorAll("button[data-id]").forEach(btn=>{
         btn.onclick = async ()=>{
-          await fetch(`/api/orders/${btn.dataset.id}/complete`, {method:"POST"});
-          loadData();
+          const id = btn.dataset.id;
+          const endpoint = btn.textContent==="완료"
+            ? `/api/orders/${id}/complete`
+            : `/api/orders/${id}/uncomplete`;
+          await fetch(endpoint,{method:"POST"});
+          loadAdmin();
         };
-      });
-      document.querySelectorAll("#completedBody .btn-warning").forEach(btn=>{
-        btn.onclick = async ()=>{
-          await fetch(`/api/orders/${btn.dataset.id}/uncomplete`, {method:"POST"});
-          loadData();
-        };
-      });
-
-      // 매출 분석
-      let totalSales = 0;
-      const byItem = {};
-      const byDay  = {};
-      completed.forEach(o=>{
-        const base = menuPrices[o.item]||0;
-        const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
-        const sale = (base + tSum) * o.quantity;
-        totalSales += sale;
-        byItem[o.item] = (byItem[o.item]||0) + sale;
-        const day = o.timestamp.split(" ")[0];
-        byDay[day] = (byDay[day]||0) + sale;
-      });
-      document.getElementById("salesSummary").textContent = `총 매출: ${totalSales.toLocaleString()}원`;
-
-      // Chart.js 그래프
-      new Chart(document.getElementById("byItemChart"), {
-        type: 'bar',
-        data: {
-          labels: Object.keys(byItem),
-          datasets: [{ label: '품목별 매출', data: Object.values(byItem) }]
-        }
-      });
-      new Chart(document.getElementById("byDayChart"), {
-        type: 'line',
-        data: {
-          labels: Object.keys(byDay),
-          datasets: [{ label: '일별 매출', data: Object.values(byDay) }]
-        }
       });
     }
 
-    loadData();
-    setInterval(loadData, 3000);
+    loadAdmin();
+    // 5초마다 자동 갱신
+    setInterval(loadAdmin, 5000);
   </script>
 </body>
 </html>

@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS orders (
     toppings    TEXT,
     deliverer   TEXT,
     address     TEXT,
-    completed   INTEGER DEFAULT 0
+    completed   INTEGER DEFAULT 0,
+    order_type  TEXT    -- 'delivery' or 'dinein'
 )
 """)
 conn.commit()
@@ -40,21 +41,24 @@ def serve_admin():
 # ─── 주문 조회 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
-    c.execute(
-        "SELECT id, timestamp, item, quantity, toppings, deliverer, address, completed "
-        "FROM orders ORDER BY id DESC"
-    )
+    c.execute("""
+      SELECT id, timestamp, item, quantity, toppings, deliverer, address, completed, order_type
+      FROM orders ORDER BY id DESC
+    """)
     rows = c.fetchall()
-    orders = [{
-        "id":        r[0],
-        "timestamp": r[1],
-        "item":      r[2],
-        "quantity":  r[3],
-        "toppings":  r[4].split(",") if r[4] else [],
-        "deliverer": r[5],
-        "address":   r[6],
-        "completed": bool(r[7])
-    } for r in rows]
+    orders = []
+    for r in rows:
+        orders.append({
+            "id":         r[0],
+            "timestamp":  r[1],
+            "item":       r[2],
+            "quantity":   r[3],
+            "toppings":   r[4].split(",") if r[4] else [],
+            "deliverer":  r[5],
+            "address":    r[6],
+            "completed":  bool(r[7]),
+            "orderType":  r[8]
+        })
     return jsonify(orders), 200
 
 # ─── 주문 등록 ───────────────────────────────────────────────
@@ -63,11 +67,20 @@ def create_order():
     data = request.get_json()
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     toppings = ",".join(data.get("toppings", []))
-    c.execute(
-        "INSERT INTO orders (timestamp, item, quantity, toppings, deliverer, address) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (ts, data["item"], data["quantity"], toppings, data["deliverer"], data["address"])
-    )
+    order_type = data.get("orderType", "delivery")
+    c.execute("""
+      INSERT INTO orders
+        (timestamp, item, quantity, toppings, deliverer, address, order_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+      ts,
+      data["item"],
+      data["quantity"],
+      toppings,
+      data["deliverer"],
+      data["address"],
+      order_type
+    ))
     conn.commit()
     return jsonify(status="ok"), 201
 
