@@ -138,7 +138,7 @@
       { name:"랜덤 라면", img:"images/random.jpeg",       price:4300 },
       { name:"햇반",      img:"images/haetban.jpg",       price:1500 }
     ];
-    const toppingsData = { 계란:700, 파:700, 김치:700 };
+    const toppingsData = { 김치:0 };
     let selectedDish, basePrice, qty, cart = [];
 
     // DOM
@@ -224,16 +224,21 @@
     };
 
     // 주문 확인 클릭 → StepReview
-    checkoutBtn.onclick = ()=>{
+    checkoutBtn.onclick = () => {
       const type = document.querySelector('input[name="orderType"]:checked').value;
       reviewOrderType.textContent = type==="dinein"? "매장식사" : "배달";
-      step1.style.display="none"; step2.style.display="none";
-      reviewList.innerHTML = cart.map(o=>
+      step1.style.display = "none";
+      step2.style.display = "none";
+      reviewList.innerHTML = cart.map(o =>
         `<li>${o.item} x${o.quantity}${o.toppings.length?` (${o.toppings.join(', ')})`:''}</li>`
       ).join('');
-      stepReview.style.display="block"; orderModal.classList.add("open");
-    };
+    
+        // 제목 숨기기
+        modalTitle.style.display = "none";
 
+        stepReview.style.display = "block";
+        orderModal.classList.add("open");
+    };
     // 수정하기
     editOrder.onclick = ()=>{
       stepReview.style.display="none";
