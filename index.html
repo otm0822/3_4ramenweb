@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🍜 라면 주문 시스템</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; margin:0; padding:1rem; }
+    h1 { text-align:center; margin-bottom:1rem; }
+
+    /* 메뉴 그리드 */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap:1rem;
+    }
+    .card {
+      background:#fff;
+      border:1px solid #ddd;
+      border-radius:8px;
+      padding:0.5rem;
+      text-align:center;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .card img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius:4px;
+    }
+    .card .caption {
+      margin-top:0.5rem;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
+    /* 모달 공통 */
+    .modal {
+      display:none; position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.6);
+      align-items:center; justify-content:center;
+      padding:1rem;
+    }
+    .modal.open { display:flex; }
+    .modal-content {
+      background:white; padding:1rem; border-radius:8px;
+      width:100%; max-width:360px;
+    }
+    .modal-content h2 {
+      margin-top:0; font-size:1.2rem;
+      text-align:center;
+    }
+
+    /* Step1: 토핑·수량·총액·담기 */
+    .toppings {
+      border-top:1px solid #eee;
+      margin:0.5rem 0;
+      max-height:150px; overflow-y:auto;
+    }
+    .topping-option {
+      display:flex; align-items:center;
+      justify-content: space-between;
+      padding:0.4rem 0;
+      font-size:0.9rem;
+      border-bottom:1px solid #f0f0f0;
+    }
+    .topping-option:last-child { border-bottom:none; }
+    .topping-option input { margin-right:0.5rem; }
+
+    .quantity {
+      display:flex; align-items:center;
+      gap:0.5rem; margin:0.5rem 0;
+      justify-content:center;
+    }
+    .quantity button {
+      width:32px; height:32px;
+      font-size:1.2rem; cursor:pointer;
+    }
+    .quantity span {
+      min-width:24px; text-align:center;
+      display:inline-block;
+    }
+
+    .order-summary {
+      display:flex; align-items:center;
+      justify-content: space-between;
+      margin-top:1rem;
+    }
+    #totalPrice {
+      font-size:1.1rem; font-weight:bold;
+    }
+    #addToCart {
+      padding:0.5rem 1rem;
+      background:#28a745; color:#fff;
+      border:none; border-radius:4px;
+      cursor:pointer;
+    }
+
+    /* Step2: 주소 입력 & 최종 주문 */
+    #step2 { display:none; }
+    #step2 label { display:block; margin:0.5rem 0 0.2rem; }
+    #step2 input, #step2 button {
+      width:100%; padding:0.5rem; margin-bottom:0.8rem;
+      font-size:1rem;
+    }
+
+    /* 관리자 */
+    #adminBtn {
+      position: fixed; top:1rem; right:1rem;
+      padding:0.4rem 0.8rem; background:#444;
+      color:#fff; border:none; border-radius:4px;
+      cursor:pointer;
+    }
+    #ordersTable {
+      width:100%; border-collapse:collapse;
+      margin-bottom:1rem;
+    }
+    #ordersTable th, #ordersTable td {
+      border:1px solid #aaa; padding:0.4rem;
+      font-size:0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🍜 라면 주문 시스템</h1>
+  <button id="adminBtn">📋 주문 확인</button>
+
+  <div class="grid" id="menuGrid"></div>
+
+  <!-- 주문 모달 -->
+  <div class="modal" id="orderModal">
+    <div class="modal-content">
+      <h2 id="modalTitle">메뉴명</h2>
+
+      <!-- Step1 -->
+      <div id="step1">
+        <div class="toppings" id="toppingsBox"></div>
+
+        <div class="quantity">
+          <button id="decQty">–</button>
+          <span id="qtyLabel">1</span>
+          <button id="incQty">+</button>
+        </div>
+
+        <div class="order-summary">
+          <div id="totalPrice">0원</div>
+          <button id="addToCart">담기</button>
+        </div>
+      </div>
+
+      <!-- Step2 -->
+      <div id="step2">
+        <label>배달 주소:</label>
+        <input type="text" id="addrInput" placeholder="주소를 입력하세요" />
+        <button id="confirmOrder">🛒 주문하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 관리자 주문 내역 모달 -->
+  <div class="modal" id="adminModal">
+    <div class="modal-content">
+      <h2>📋 주문 내역</h2>
+      <table id="ordersTable">
+        <thead>
+          <tr><th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>주소</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button id="closeAdmin">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    // 메뉴 & 가격
+    const menu = [
+      { name: "기본 라면", img: "images/jiheramen.jpeg", price: 4000 },
+      { name: "치즈 라면", img: "images/cheese_ramen.jpg", price: 4500 },
+      { name: "떡 라면",   img: "images/tteok_ramen.jpg",   price: 4500 },
+      { name: "만두 라면", img: "images/mandu_ramen.jpg",   price: 4500 },
+    ];
+    // 토핑 & 가격
+    const toppingsData = {
+      계란: 700,
+      파:   700,
+      김치: 700
+    };
+
+    let selectedDish = null;
+    let basePrice = 0;
+    let qty = 1;
+
+    const menuGrid    = document.getElementById("menuGrid");
+    const orderModal  = document.getElementById("orderModal");
+    const adminModal  = document.getElementById("adminModal");
+    const modalTitle  = document.getElementById("modalTitle");
+    const toppingsBox = document.getElementById("toppingsBox");
+    const decQty      = document.getElementById("decQty");
+    const incQty      = document.getElementById("incQty");
+    const qtyLabel    = document.getElementById("qtyLabel");
+    const totalPrice  = document.getElementById("totalPrice");
+    const addToCart   = document.getElementById("addToCart");
+    const step1       = document.getElementById("step1");
+    const step2       = document.getElementById("step2");
+    const addrInput   = document.getElementById("addrInput");
+    const confirmOrder= document.getElementById("confirmOrder");
+    const adminBtn    = document.getElementById("adminBtn");
+    const closeAdmin  = document.getElementById("closeAdmin");
+    const ordersTblB  = document.querySelector("#ordersTable tbody");
+
+    // 메뉴 카드 렌더링
+    menu.forEach((item, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${item.img}" data-idx="${idx}" alt="${item.name}">
+        <div class="caption">${item.name}</div>
+      `;
+      menuGrid.append(card);
+    });
+
+    // 총액 계산
+    function updateTotal() {
+      const checked = Array.from(toppingsBox.querySelectorAll("input:checked"))
+                           .map(cb => toppingsData[cb.value]);
+      const toppingSum = checked.reduce((a,b)=>a+b, 0);
+      const total = (basePrice + toppingSum) * qty;
+      totalPrice.textContent = total.toLocaleString() + "원";
+    }
+
+    // 이미지 클릭 → 주문 모달 열기
+    menuGrid.addEventListener("click", e => {
+      if (e.target.tagName === "IMG") {
+        const idx = +e.target.dataset.idx;
+        const item = menu[idx];
+        selectedDish = item.name;
+        basePrice = item.price;
+        modalTitle.textContent = selectedDish;
+
+        // 토핑 체크박스 생성
+        toppingsBox.innerHTML = Object.keys(toppingsData)
+          .map(name => `
+            <label class="topping-option">
+              <input type="checkbox" value="${name}"> ${name} (+${toppingsData[name]}원)
+            </label>
+          `).join("");
+
+        // 초기 수량 & 총액
+        qty = 1;
+        qtyLabel.textContent = qty;
+        updateTotal();
+
+        // 이벤트: 토핑 선택할 때마다 총액 업데이트
+        toppingsBox.querySelectorAll("input").forEach(cb =>
+          cb.addEventListener("change", updateTotal)
+        );
+
+        // Step 전환
+        step1.style.display = "block";
+        step2.style.display = "none";
+
+        orderModal.classList.add("open");
+      }
+    });
+
+    // 수량 조절
+    decQty.addEventListener("click", () => {
+      if (qty > 1) qty--;
+      qtyLabel.textContent = qty;
+      updateTotal();
+    });
+    incQty.addEventListener("click", () => {
+      qty++;
+      qtyLabel.textContent = qty;
+      updateTotal();
+    });
+
+    // 담기 클릭 → 주소 입력으로 이동
+    addToCart.addEventListener("click", () => {
+      step1.style.display = "none";
+      step2.style.display = "block";
+    });
+
+    // 주문하기 클릭 → 서버 전송
+    confirmOrder.addEventListener("click", () => {
+      const selectedToppings = Array.from(
+        toppingsBox.querySelectorAll("input:checked")
+      ).map(cb => cb.value);
+      const payload = {
+        item: selectedDish,
+        quantity: qty,
+        toppings: selectedToppings,
+        address: addrInput.value
+      };
+      fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error("주문 저장 실패");
+        alert("✅ 주문 완료!");
+        orderModal.classList.remove("open");
+      })
+      .catch(err => {
+        console.error(err);
+        alert("❌ 주문 실패");
+      });
+    });
+
+    // 주문 모달 닫기
+    orderModal.addEventListener("click", e => {
+      if (e.target === orderModal) orderModal.classList.remove("open");
+    });
+
+    // 관리자 버튼 → 주문 내역 조회
+    adminBtn.addEventListener("click", async () => {
+      const pw = prompt("관리자 비밀번호를 입력하세요:");
+      if (pw === "admin123") {
+        try {
+          const res = await fetch("/api/orders");
+          if (!res.ok) throw new Error("조회 실패");
+          const orders = await res.json();
+          ordersTblB.innerHTML = orders.map(o => `
+            <tr>
+              <td>${o.timestamp}</td>
+              <td>${o.item}</td>
+              <td>${o.quantity}</td>
+              <td>${o.toppings}</td>
+              <td>${o.address}</td>
+            </tr>
+          `).join("");
+          adminModal.classList.add("open");
+        } catch (err) {
+          console.error(err);
+          alert("❌ 주문 내역 불러오기 실패");
+        }
+      } else {
+        alert("❌ 비밀번호가 틀렸습니다");
+      }
+    });
+    closeAdmin.addEventListener("click", () => {
+      adminModal.classList.remove("open");
+    });
+  </script>
+
+</body>
+</html>
