@@ -47,6 +47,7 @@
     /* Step 2: 리뷰 */
     #stepReview { display: none; }
     #stepReview h3 { text-align: center; margin-top: 0; }
+    #stepReview p { text-align: center; font-weight: bold; margin-bottom: 0.5rem; }
     #stepReview ul { list-style: none; padding: 0; margin: 0.5rem 0; max-height: 150px; overflow-y: auto; }
     #stepReview button { margin: 0.25rem; padding: 0.5rem 1rem; cursor: pointer; }
 
@@ -102,6 +103,7 @@
       <!-- Step 2: 리뷰 -->
       <div id="stepReview">
         <h3>주문 내역 확인</h3>
+        <p>주문 유형: <span id="reviewOrderType">배달</span></p>
         <ul id="reviewList"></ul>
         <div style="text-align:center;">
           <button id="editOrder">수정하기</button>
@@ -140,32 +142,33 @@
     let selectedDish, basePrice, qty, cart = [];
 
     // DOM
-    const menuGrid = document.getElementById("menuGrid"),
-          orderModal = document.getElementById("orderModal"),
-          modalTitle = document.getElementById("modalTitle"),
-          toppingsBox = document.getElementById("toppingsBox"),
-          decQty = document.getElementById("decQty"),
-          incQty = document.getElementById("incQty"),
-          qtyLabel = document.getElementById("qtyLabel"),
-          totalPrice = document.getElementById("totalPrice"),
-          addToCart = document.getElementById("addToCart"),
-          step1 = document.getElementById("step1"),
-          stepReview = document.getElementById("stepReview"),
-          reviewList = document.getElementById("reviewList"),
-          editOrder = document.getElementById("editOrder"),
-          confirmReview = document.getElementById("confirmReview"),
-          step2 = document.getElementById("step2"),
-          orderHint = document.getElementById("orderHint"),
-          dineinField = document.getElementById("dineinField"),
+    const menuGrid       = document.getElementById("menuGrid"),
+          orderModal     = document.getElementById("orderModal"),
+          modalTitle     = document.getElementById("modalTitle"),
+          toppingsBox    = document.getElementById("toppingsBox"),
+          decQty         = document.getElementById("decQty"),
+          incQty         = document.getElementById("incQty"),
+          qtyLabel       = document.getElementById("qtyLabel"),
+          totalPrice     = document.getElementById("totalPrice"),
+          addToCart      = document.getElementById("addToCart"),
+          step1          = document.getElementById("step1"),
+          stepReview     = document.getElementById("stepReview"),
+          reviewList     = document.getElementById("reviewList"),
+          editOrder      = document.getElementById("editOrder"),
+          confirmReview  = document.getElementById("confirmReview"),
+          reviewOrderType= document.getElementById("reviewOrderType"),
+          step2          = document.getElementById("step2"),
+          orderHint      = document.getElementById("orderHint"),
+          dineinField    = document.getElementById("dineinField"),
           deliveryFields = document.getElementById("deliveryFields"),
-          infoInput = document.getElementById("infoInput"),
+          infoInput      = document.getElementById("infoInput"),
           delivererInput = document.getElementById("delivererInput"),
-          addrInput = document.getElementById("addrInput"),
-          confirmOrder = document.getElementById("confirmOrder"),
-          checkoutBtn = document.getElementById("checkoutBtn"),
-          cartCount = document.getElementById("cartCount"),
-          cartTotal = document.getElementById("cartTotal"),
-          adminBtn = document.getElementById("adminBtn");
+          addrInput      = document.getElementById("addrInput"),
+          confirmOrder   = document.getElementById("confirmOrder"),
+          checkoutBtn    = document.getElementById("checkoutBtn"),
+          cartCount      = document.getElementById("cartCount"),
+          cartTotal      = document.getElementById("cartTotal"),
+          adminBtn       = document.getElementById("adminBtn");
 
     function updateTotal() {
       const sumT = Array.from(toppingsBox.querySelectorAll("input:checked"))
@@ -194,109 +197,103 @@
       menuGrid.append(card);
     });
 
-    // 카드 클릭 → Step1
+    // Step1: 메뉴선택
     menuGrid.addEventListener("click", e => {
       if (e.target.tagName !== "IMG") return;
       const it = menu[+e.target.dataset.idx];
       selectedDish = it.name; basePrice = it.price; qty = 1;
       modalTitle.textContent = selectedDish;
       toppingsBox.innerHTML = Object.keys(toppingsData).map(n =>
-        `<label class="topping-option">
-           <input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)
-         </label>`
+        `<label class="topping-option"><input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)</label>`
       ).join("");
-      step1.style.display="block";
-      stepReview.style.display="none";
-      step2.style.display="none";
+      step1.style.display="block"; stepReview.style.display="none"; step2.style.display="none";
       qtyLabel.textContent = qty; updateTotal();
       orderModal.classList.add("open");
-      toppingsBox.querySelectorAll("input").forEach(cb => cb.addEventListener("change", updateTotal));
+      toppingsBox.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",updateTotal));
     });
 
-    decQty.onclick = () => { if (qty>1) qty--; qtyLabel.textContent = qty; updateTotal(); };
-    incQty.onclick = () => { qty++; qtyLabel.textContent = qty; updateTotal(); };
+    decQty.onclick = ()=>{ if(qty>1)qty--;qtyLabel.textContent=qty;updateTotal(); };
+    incQty.onclick = ()=>{ qty++;qtyLabel.textContent=qty;updateTotal(); };
 
-    // 담기
-    addToCart.onclick = () => {
-      const tops = Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb => cb.value);
-      cart.push({ item: selectedDish, quantity: qty, toppings: tops });
+    // 담기 (장바구니 추가)
+    addToCart.onclick = ()=>{
+      const tops = Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb=>cb.value);
+      cart.push({ item:selectedDish, quantity:qty, toppings:tops });
       updateCartSummary();
       orderModal.classList.remove("open");
     };
 
-    // 주문 확인 → StepReview
-    checkoutBtn.onclick = () => {
-      step1.style.display="none";
-      step2.style.display="none";
-      reviewList.innerHTML = cart.map(o =>
-        `<li>${o.item} x${o.quantity}${o.toppings.length? ` (${o.toppings.join(', ')})` : ''}</li>`
+    // 주문 확인 클릭 → StepReview
+    checkoutBtn.onclick = ()=>{
+      const type = document.querySelector('input[name="orderType"]:checked').value;
+      reviewOrderType.textContent = type==="dinein"? "매장식사" : "배달";
+      step1.style.display="none"; step2.style.display="none";
+      reviewList.innerHTML = cart.map(o=>
+        `<li>${o.item} x${o.quantity}${o.toppings.length?` (${o.toppings.join(', ')})`:''}</li>`
       ).join('');
-      stepReview.style.display="block";
-      orderModal.classList.add("open");
+      stepReview.style.display="block"; orderModal.classList.add("open");
     };
 
     // 수정하기
-    editOrder.onclick = () => {
+    editOrder.onclick = ()=>{
       stepReview.style.display="none";
       orderModal.classList.remove("open");
     };
-    // 확인 → Step2
-    confirmReview.onclick = () => {
+
+    // 확인 → Step2: 정보 입력
+    confirmReview.onclick = ()=>{
       stepReview.style.display="none";
       const type = document.querySelector('input[name="orderType"]:checked').value;
-      if (type==="dinein") {
+      if(type==="dinein"){
         orderHint.textContent = "📝 매장식사 시 테이블 번호 또는 수령인 이름을 입력해주세요.";
-        dineinField.style.display="block";
-        deliveryFields.style.display="none";
+        dineinField.style.display="block"; deliveryFields.style.display="none";
       } else {
         orderHint.textContent = "";
-        dineinField.style.display="none";
-        deliveryFields.style.display="block";
+        dineinField.style.display="none"; deliveryFields.style.display="block";
       }
       step2.style.display="block";
     };
 
-    // 최종 주문
-    confirmOrder.onclick = () => {
+    // 최종 주문 전송
+    confirmOrder.onclick = ()=>{
       const type = document.querySelector('input[name="orderType"]:checked').value;
       let del, addr;
-      if (type==="dinein") {
+      if(type==="dinein"){
         del = addr = infoInput.value.trim();
       } else {
         del = delivererInput.value.trim();
         addr = addrInput.value.trim();
       }
-      if (!del) { alert("❗ 수령 정보를 입력해주세요."); return; }
-      if (type==="delivery" && !addr) { alert("❗ 배달 주소를 입력해주세요."); return; }
-      cart.forEach(o => {
-        fetch("/api/orders", {
-          method: "POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({
-            item: o.item,
-            quantity: o.quantity,
-            toppings: o.toppings,
-            deliverer: del,
-            address: addr,
-            orderType: type
+      if(!del){ alert("❗ 수령 정보를 입력해주세요."); return; }
+      if(type==="delivery"&&!addr){ alert("❗ 배달 주소를 입력해주세요."); return; }
+      cart.forEach(o=>{
+        fetch("/api/orders",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            item:o.item,
+            quantity:o.quantity,
+            toppings:o.toppings,
+            deliverer:del,
+            address:addr,
+            orderType:type
           })
         });
       });
       alert("✅ 주문이 완료되었습니다!");
-      cart.length = 0;
-      updateCartSummary();
+      cart.length=0; updateCartSummary();
       orderModal.classList.remove("open");
     };
 
     // 모달 닫기
-    orderModal.addEventListener("click", e => {
-      if (e.target === orderModal) orderModal.classList.remove("open");
+    orderModal.addEventListener("click", e=>{
+      if(e.target===orderModal) orderModal.classList.remove("open");
     });
 
     // 관리자 이동
-    adminBtn.onclick = () => {
+    adminBtn.onclick = ()=>{
       const pw = prompt("관리자 비밀번호를 입력하세요:");
-      if (pw==="admin123") window.location.href="/admin";
+      if(pw==="202534") window.location.href="/admin";
       else alert("❌ 비밀번호가 틀렸습니다");
     };
   </script>
