@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
+import os
 from datetime import datetime
 
-app = Flask(__name__)
-CORS(app)  # 클라이언트(브라우저)에서 호출 허용
+app = Flask(__name__, static_folder=".")
+CORS(app)  # 브라우저에서 호출 허용
 
 # 1) DB 초기화 (orders 테이블)
 conn = sqlite3.connect("orders.db", check_same_thread=False)
@@ -20,7 +21,12 @@ CREATE TABLE IF NOT EXISTS orders (
 )""")
 conn.commit()
 
-# 2) 주문 등록 엔드포인트
+# 2) 정적 파일 서빙 (index.html)
+@app.route("/")
+def index():
+    return send_from_directory(".", "index.html")
+
+# 3) 주문 등록 엔드포인트
 @app.route("/api/orders", methods=["POST"])
 def create_order():
     data = request.get_json()
@@ -32,7 +38,7 @@ def create_order():
     conn.commit()
     return jsonify({"status":"ok"}), 201
 
-# 3) 주문 조회 엔드포인트
+# 4) 주문 조회 엔드포인트
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
     c.execute("SELECT timestamp,item,quantity,toppings,address FROM orders ORDER BY id DESC")
@@ -43,5 +49,7 @@ def list_orders():
     ]
     return jsonify(orders)
 
+# 5) 앱 실행: Railway가 할당한 PORT 환경변수를 사용
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
