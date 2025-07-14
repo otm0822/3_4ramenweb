@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>📋 주문 내역</title>
+  <style>
+    body { font-family:sans-serif; padding:1rem; margin:0; }
+    h1 { text-align:center; margin-bottom:1rem; }
+    #salesSummary { font-weight:bold; margin-bottom:1rem; }
+    h2 { margin-top:2rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top:0.5rem;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 0.5rem;
+      text-align: center;
+      font-size:0.9rem;
+    }
+    button.complete {
+      padding: 0.3rem 0.6rem;
+      cursor: pointer;
+    }
+    .btn-back {
+      margin-top:2rem;
+      padding:0.5rem 1rem;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 주문 내역</h1>
+  <div id="salesSummary">총 매출: 0원</div>
+
+  <h2>진행 중</h2>
+  <table id="pendingTable">
+    <thead>
+      <tr>
+        <th>시간</th><th>메뉴</th><th>수량</th>
+        <th>토핑</th><th>수령인</th><th>주소</th><th>완료</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>완료됨</h2>
+  <table id="completedTable">
+    <thead>
+      <tr>
+        <th>시간</th><th>메뉴</th><th>수량</th>
+        <th>토핑</th><th>수령인</th><th>주소</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button class="btn-back" onclick="location.href='/'">← 주문 화면으로 돌아가기</button>
+
+  <script>
+    const menu = {
+      "기본 라면":4000,
+      "치즈 라면":4500,
+      "떡 라면":4500,
+      "만두 라면":4500,
+      "랜덤 라면":4300,
+      "햇반":1500
+    };
+    const toppingPrices = { 계란:700, 파:700, 김치:700 };
+
+    async function loadAdmin() {
+      const res = await fetch("/api/orders");
+      const os  = await res.json();
+
+      // 분리
+      const pending   = os.filter(o=>!o.completed);
+      const completed = os.filter(o=>o.completed);
+
+      // 매출 계산
+      let totalSales = 0;
+      completed.forEach(o=>{
+        const base = menu[o.item]||0;
+        const tSum = o.toppings.reduce((sum,t)=>sum + (toppingPrices[t]||0), 0);
+        totalSales += (base + tSum) * o.quantity;
+      });
+      document.getElementById("salesSummary").textContent =
+        `총 매출: ${totalSales.toLocaleString()}원`;
+
+      // 진행중 렌더
+      const pTbody = document.querySelector("#pendingTable tbody");
+      pTbody.innerHTML = pending.map(o=>`
+        <tr>
+          <td>${o.timestamp}</td>
+          <td>${o.item}</td>
+          <td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td>
+          <td>${o.deliverer}</td>
+          <td>${o.address}</td>
+          <td><button class="complete" data-id="${o.id}">완료</button></td>
+        </tr>
+      `).join("");
+
+      // 완료 렌더
+      const cTbody = document.querySelector("#completedTable tbody");
+      cTbody.innerHTML = completed.map(o=>`
+        <tr>
+          <td>${o.timestamp}</td>
+          <td>${o.item}</td>
+          <td>${o.quantity}</td>
+          <td>${o.toppings.join(",")}</td>
+          <td>${o.deliverer}</td>
+          <td>${o.address}</td>
+        </tr>
+      `).join("");
+
+      // 완료 버튼 이벤트
+      document.querySelectorAll(".complete").forEach(btn=>{
+        btn.onclick = async () => {
+          await fetch(`/api/orders/${btn.dataset.id}/complete`, { method:"POST" });
+          loadAdmin();
+        };
+      });
+    }
+
+    // 초기 로드
+    loadAdmin();
+  </script>
+</body>
+</html>
