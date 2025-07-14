@@ -1,34 +1,39 @@
+import os
+import sqlite3
+from datetime import datetime
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import sqlite3
-import os
-from datetime import datetime
 
-# ─── Flask 앱 생성: static_folder='.' 로 지정하고, static_url_path='' 으로 루트에서 바로 서빙
-app = Flask(__name__, static_folder=".", static_url_path="")
-CORS(app)  # 브라우저 CORS 허용
+# ─── 앱 기본 설정 ───────────────────────────────────────────────
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# ─── 1) DB 초기화 (orders 테이블)
-conn = sqlite3.connect("orders.db", check_same_thread=False)
+# static_folder='.' + static_url_path='' → 루트 경로에서 index.html, images/* 모두 서빙
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
+CORS(app)
+
+# ─── 1) DB 초기화 ───────────────────────────────────────────────
+db_path = os.path.join(BASE_DIR, "orders.db")
+conn = sqlite3.connect(db_path, check_same_thread=False)
 c = conn.cursor()
 c.execute("""
 CREATE TABLE IF NOT EXISTS orders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT,
-    item TEXT,
-    quantity INTEGER,
-    toppings TEXT,
-    address TEXT
+    item      TEXT,
+    quantity  INTEGER,
+    toppings  TEXT,
+    address   TEXT
 )
 """)
 conn.commit()
 
-# ─── 2) 정적 파일 서빙 (index.html)
+# ─── 2) 정적 파일 서빙 (index.html) ────────────────────────────
 @app.route("/")
 def serve_index():
-    return send_from_directory(app.static_folder, "index.html")
+    # BASE_DIR/index.html 리턴
+    return send_from_directory(BASE_DIR, "index.html")
 
-# ─── 3) 주문 등록 엔드포인트
+# ─── 3) 주문 등록 API ───────────────────────────────────────────
 @app.route("/api/orders", methods=["POST"])
 def create_order():
     data = request.get_json()
@@ -46,7 +51,7 @@ def create_order():
     conn.commit()
     return jsonify({"status": "ok"}), 201
 
-# ─── 4) 주문 조회 엔드포인트
+# ─── 4) 주문 조회 API ───────────────────────────────────────────
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
     c.execute(
@@ -54,19 +59,18 @@ def list_orders():
         "FROM orders ORDER BY id DESC"
     )
     rows = c.fetchall()
-    orders = [
-        {
-            "timestamp": r[0],
-            "item":      r[1],
-            "quantity":  r[2],
-            "toppings":  r[3].split(",") if r[3] else [],
-            "address":   r[4]
-        }
-        for r in rows
-    ]
+    orders = []
+    for ts, item, qty, tops, addr in rows:
+        orders.append({
+            "timestamp": ts,
+            "item":      item,
+            "quantity":  qty,
+            "toppings":  tops.split(",") if tops else [],
+            "address":   addr
+        })
     return jsonify(orders), 200
 
-# ─── 5) 앱 실행 (Railway 등 PaaS의 PORT 환경변수 사용)
+# ─── 5) 앱 실행 (개발용) ────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
