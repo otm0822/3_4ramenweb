@@ -6,104 +6,122 @@
   <title>🍜 지혜로운 라면 🍜</title>
   <style>
     * { box-sizing: border-box; }
-    html, body { height:100%; margin:0; }
+    html, body { height: 100%; margin: 0; }
     body {
       display: flex; flex-direction: column;
-      font-family: sans-serif; padding:1rem;
+      font-family: sans-serif; padding: 1rem;
     }
-    h1 { text-align:center; margin-bottom:1rem; }
+    h1 { text-align: center; margin-bottom: 1rem; }
 
+    /* 메뉴 그리드 */
     .grid {
-      flex:1;
+      flex: 1;
       display: grid;
-      grid-template-columns: repeat(2, minmax(120px,1fr));
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
       grid-auto-rows: 1fr;
-      gap:1rem;
-      max-width:600px;
-      margin:0 auto;
+      gap: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
       align-content: space-around;
     }
     .card {
-      background:#fff; border:1px solid #ddd;
-      border-radius:8px; padding:0.5rem;
-      box-shadow:0 2px 5px rgba(0,0,0,0.1);
-      display:flex; flex-direction:column;
-      justify-content:space-between;
-      cursor:pointer; height:100%;
+      background: #fff; border: 1px solid #ddd;
+      border-radius: 8px; padding: 0.5rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer; height: 100%;
     }
     .card img {
-      flex:1; width:100%; object-fit:cover; border-radius:4px;
+      flex: 1; width: 100%;
+      object-fit: cover; border-radius: 4px;
     }
     .caption {
-      margin:0.5rem 0 1rem; text-align:center;
-      font-weight:bold; font-size:0.9rem;
+      margin: 0.5rem 0 1rem;
+      text-align: center; font-weight: bold;
+      font-size: 0.9rem;
     }
 
+    /* 카트 요약(고정 푸터) */
     #cartSummary {
-      position:fixed; bottom:0; left:0; right:0;
-      background:#fff; border-top:1px solid #ddd;
-      padding:0.5rem 1rem;
-      display:flex; justify-content:space-between;
-      align-items:center; z-index:999;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #ddd;
+      padding: 0.5rem 1rem;
+      display: flex; justify-content: space-between;
+      align-items: center; z-index: 999;
     }
-    #cartSummary label { margin-right:1rem; }
-    #cartSummary button { padding:0.4rem 0.8rem; cursor:pointer; }
+    #cartSummary label { margin-right: 1rem; }
+    #cartSummary button {
+      padding: 0.4rem 0.8rem; cursor: pointer;
+    }
 
+    /* 주문 모달 */
     .modal {
-      display:none; position:fixed;
-      top:0; left:0; right:0; bottom:0;
-      background:rgba(0,0,0,0.6);
-      align-items:center; justify-content:center;
-      padding:1rem;
+      display: none; position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center;
+      padding: 1rem;
     }
-    .modal.open { display:flex; }
+    .modal.open { display: flex; }
     .modal-content {
-      background:#fff; padding:1rem; border-radius:8px;
-      width:100%; max-width:360px;
+      background: #fff; padding: 1rem; border-radius: 8px;
+      width: 100%; max-width: 360px;
     }
-    .modal-content h2 { text-align:center; margin-top:0; }
+    .modal-content h2 {
+      margin-top: 0; text-align: center;
+    }
 
+    /* Step1 */
     .toppings {
-      border-top:1px solid #eee; margin:0.5rem 0;
-      max-height:150px; overflow-y:auto;
+      border-top: 1px solid #eee;
+      margin: 0.5rem 0; max-height: 150px;
+      overflow-y: auto;
     }
     .topping-option {
-      display:flex; justify-content:space-between;
-      padding:0.4rem 0; border-bottom:1px solid #f0f0f0;
-      font-size:0.9rem;
+      display: flex; justify-content: space-between;
+      padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0;
+      font-size: 0.9rem;
     }
-    .topping-option:last-child { border-bottom:none; }
-    .topping-option input { margin-right:0.5rem; }
+    .topping-option:last-child { border-bottom: none; }
+    .topping-option input { margin-right: 0.5rem; }
 
     .quantity {
-      display:flex; justify-content:center;
-      align-items:center; gap:0.5rem; margin:0.5rem 0;
+      display: flex; justify-content: center;
+      align-items: center; gap: 0.5rem; margin: 0.5rem 0;
     }
     .quantity button {
-      width:32px; height:32px; font-size:1.2rem; cursor:pointer;
+      width: 32px; height: 32px; font-size: 1.2rem;
+      cursor: pointer;
     }
     .order-summary {
-      display:flex; justify-content:space-between;
-      align-items:center; margin-top:1rem;
+      display: flex; justify-content: space-between;
+      align-items: center; margin-top: 1rem;
     }
-    #totalPrice { font-weight:bold; }
+    #totalPrice { font-weight: bold; }
     #addToCart {
-      background:#28a745; color:#fff; border:none;
-      padding:0.5rem 1rem; border-radius:4px; cursor:pointer;
+      background: #28a745; color: #fff; border: none;
+      padding: 0.5rem 1rem; border-radius: 4px;
+      cursor: pointer;
     }
 
-    #step2 { display:none; }
-    #step2 label { display:block; margin:0.5rem 0 0.2rem; }
+    /* Step2 */
+    #step2 { display: none; }
+    #step2 p {
+      color: #555; font-size: 0.9rem; margin-bottom: 0.5rem;
+    }
+    #step2 label { display: block; margin: 0.5rem 0 0.2rem; }
     #step2 input, #step2 button {
-      width:100%; padding:0.5rem; margin-bottom:0.8rem;
-      font-size:1rem;
+      width: 100%; padding: 0.5rem;
+      margin-bottom: 0.8rem; font-size: 1rem;
     }
 
+    /* 관리자 버튼 */
     #adminBtn {
-      position:fixed; top:1rem; right:1rem;
-      padding:0.4rem 0.8rem; background:#444;
-      color:#fff; border:none; border-radius:4px;
-      cursor:pointer;
+      position: fixed; top: 1rem; right: 1rem;
+      padding: 0.4rem 0.8rem; background: #444;
+      color: #fff; border: none; border-radius: 4px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -125,9 +143,11 @@
     </div>
   </div>
 
+  <!-- 주문 모달 -->
   <div class="modal" id="orderModal">
     <div class="modal-content">
       <h2 id="modalTitle">메뉴명</h2>
+      <!-- Step1 -->
       <div id="step1">
         <div class="toppings" id="toppingsBox"></div>
         <div class="quantity">
@@ -140,9 +160,11 @@
           <button id="addToCart">담기</button>
         </div>
       </div>
+      <!-- Step2 -->
       <div id="step2">
+        <p id="orderHint"></p>
         <label>수령인:</label>
-        <input type="text" id="delivererInput" placeholder="수령인 이름" />
+        <input type="text" id="delivererInput" placeholder="수령인 이름을 입력하세요" />
         <label id="addrLabel" for="addrInput">배달 주소:</label>
         <input type="text" id="addrInput" placeholder="주소 또는 테이블 번호" />
         <button id="confirmOrder">🛒 주문하기</button>
@@ -152,121 +174,155 @@
 
   <script>
     const menu = [
-      {name:"기본 라면",img:"images/jiheramen.jpeg",price:4000},
-      {name:"치즈 라면",img:"images/cheese_ramen.jpg",price:4500},
-      {name:"떡 라면",  img:"images/tteok_ramen.jpg",price:4500},
-      {name:"만두 라면",img:"images/mandu_ramen.jpg",price:4500},
-      {name:"랜덤 라면",img:"images/random.jpeg",price:4300},
-      {name:"햇반",     img:"images/haetban.jpg",price:1500}
+      { name:"기본 라면", img:"images/jiheramen.jpeg", price:4000 },
+      { name:"치즈 라면", img:"images/cheese_ramen.jpg", price:4500 },
+      { name:"떡 라면",   img:"images/tteok_ramen.jpg",   price:4500 },
+      { name:"만두 라면", img:"images/mandu_ramen.jpg",   price:4500 },
+      { name:"랜덤 라면", img:"images/random.jpeg",       price:4300 },
+      { name:"햇반",      img:"images/haetban.jpg",       price:1500 }
     ];
-    const toppingsData={계란:700,파:700,김치:700};
+    const toppingsData = { 계란:700, 파:700, 김치:700 };
 
-    let selectedDish,basePrice,qty;
-    const cart=[];
+    let selectedDish, basePrice, qty;
+    const cart = [];
 
-    const menuGrid=document.getElementById("menuGrid");
-    const orderModal=document.getElementById("orderModal");
-    const modalTitle=document.getElementById("modalTitle");
-    const toppingsBox=document.getElementById("toppingsBox");
-    const decQty=document.getElementById("decQty");
-    const incQty=document.getElementById("incQty");
-    const qtyLabel=document.getElementById("qtyLabel");
-    const totalPrice=document.getElementById("totalPrice");
-    const addToCart=document.getElementById("addToCart");
-    const step1=document.getElementById("step1");
-    const step2=document.getElementById("step2");
-    const delivererInput=document.getElementById("delivererInput");
-    const addrInput=document.getElementById("addrInput");
-    const addrLabel=document.getElementById("addrLabel");
-    const confirmOrder=document.getElementById("confirmOrder");
-    const checkoutBtn=document.getElementById("checkoutBtn");
-    const cartCount=document.getElementById("cartCount");
-    const cartTotal=document.getElementById("cartTotal");
-    const adminBtn=document.getElementById("adminBtn");
+    const menuGrid       = document.getElementById("menuGrid");
+    const orderModal     = document.getElementById("orderModal");
+    const modalTitle     = document.getElementById("modalTitle");
+    const toppingsBox    = document.getElementById("toppingsBox");
+    const decQty         = document.getElementById("decQty");
+    const incQty         = document.getElementById("incQty");
+    const qtyLabel       = document.getElementById("qtyLabel");
+    const totalPrice     = document.getElementById("totalPrice");
+    const addToCart      = document.getElementById("addToCart");
+    const step1          = document.getElementById("step1");
+    const step2          = document.getElementById("step2");
+    const orderHint      = document.getElementById("orderHint");
+    const delivererInput = document.getElementById("delivererInput");
+    const addrInput      = document.getElementById("addrInput");
+    const addrLabel      = document.getElementById("addrLabel");
+    const confirmOrder   = document.getElementById("confirmOrder");
+    const checkoutBtn    = document.getElementById("checkoutBtn");
+    const cartCount      = document.getElementById("cartCount");
+    const cartTotal      = document.getElementById("cartTotal");
+    const adminBtn       = document.getElementById("adminBtn");
 
     function updateTotal(){
-      const sumT=Array.from(toppingsBox.querySelectorAll("input:checked"))
-        .map(cb=>toppingsData[cb.value]).reduce((a,b)=>a+b,0);
-      totalPrice.textContent=((basePrice+sumT)*qty).toLocaleString()+"원";
+      const sumT = Array.from(
+        toppingsBox.querySelectorAll("input:checked")
+      ).map(cb=>toppingsData[cb.value]).reduce((a,b)=>a+b,0);
+      totalPrice.textContent = ((basePrice + sumT) * qty).toLocaleString() + "원";
     }
     function updateCartSummary(){
-      const count=cart.reduce((s,o)=>s+o.quantity,0);
-      const price=cart.reduce((s,o)=>{
-        const base=menu.find(m=>m.name===o.item).price;
-        const sumT=o.toppings.reduce((a,t)=>a+toppingsData[t],0);
-        return s+(base+sumT)*o.quantity;
-      },0);
-      cartCount.textContent=`${count}개`;
-      cartTotal.textContent=`${price.toLocaleString()}원`;
+      const count = cart.reduce((s,o)=>s + o.quantity, 0);
+      const price = cart.reduce((s,o)=>{
+        const base = menu.find(m=>m.name===o.item).price;
+        const tSum = o.toppings.reduce((a,t)=>a + toppingsData[t], 0);
+        return s + (base + tSum) * o.quantity;
+      }, 0);
+      cartCount.textContent = `${count}개`;
+      cartTotal.textContent = `${price.toLocaleString()}원`;
     }
 
-    // 메뉴 그리드
-    menu.forEach((it,idx)=>{
-      const c=document.createElement("div");
-      c.className="card";
-      c.innerHTML=`<img src="${it.img}" data-idx="${idx}" alt="${it.name}"/><div class="caption">${it.name}</div>`;
-      menuGrid.append(c);
+    // 메뉴 렌더링
+    menu.forEach((it, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${it.img}" data-idx="${idx}" alt="${it.name}" />
+        <div class="caption">${it.name}</div>
+      `;
+      menuGrid.append(card);
     });
 
-    // 카드 클릭 → 모달
-    menuGrid.addEventListener("click",e=>{
-      if(e.target.tagName!=="IMG")return;
-      const idx=+e.target.dataset.idx, it=menu[idx];
-      selectedDish=it.name; basePrice=it.price; qty=1;
-      modalTitle.textContent=selectedDish;
-      toppingsBox.innerHTML=Object.keys(toppingsData).map(n=>
-        `<label class="topping-option"><input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)</label>`
+    // 카드 클릭 → Step1 모달
+    menuGrid.addEventListener("click", e => {
+      if (e.target.tagName !== "IMG") return;
+      const idx = +e.target.dataset.idx, it = menu[idx];
+      selectedDish = it.name; basePrice = it.price; qty = 1;
+      modalTitle.textContent = selectedDish;
+      toppingsBox.innerHTML = Object.keys(toppingsData).map(n =>
+        `<label class="topping-option">
+           <input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)
+         </label>`
       ).join("");
-      step1.style.display="block"; step2.style.display="none";
-      qtyLabel.textContent=qty; updateTotal();
+      step1.style.display = "block";
+      step2.style.display = "none";
+      qtyLabel.textContent = qty; updateTotal();
+      orderHint.textContent = "";
+      delivererInput.value = "";
+      addrInput.value = "";
+      addrLabel.textContent = "배달 주소:";
+      addrInput.placeholder = "주소 또는 테이블 번호";
       orderModal.classList.add("open");
-      toppingsBox.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",updateTotal));
+      toppingsBox.querySelectorAll("input").forEach(cb => cb.addEventListener("change", updateTotal));
     });
 
-    decQty.onclick=()=>{ if(qty>1)qty--; qtyLabel.textContent=qty; updateTotal(); };
-    incQty.onclick=()=>{ qty++; qtyLabel.textContent=qty; updateTotal(); };
+    decQty.onclick = () => { if (qty > 1) qty--; qtyLabel.textContent = qty; updateTotal(); };
+    incQty.onclick = () => { qty++; qtyLabel.textContent = qty; updateTotal(); };
 
     // 담기
-    addToCart.onclick=()=>{
-      const tops=Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb=>cb.value);
-      cart.push({item:selectedDish,quantity:qty,toppings:tops});
+    addToCart.onclick = () => {
+      const tops = Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb => cb.value);
+      cart.push({ item: selectedDish, quantity: qty, toppings: tops });
       updateCartSummary();
       orderModal.classList.remove("open");
     };
 
-    // 체크아웃
-    checkoutBtn.onclick=()=>{
-      const type=document.querySelector('input[name="orderType"]:checked').value;
-      addrLabel.textContent= type==="delivery" ? "배달 주소:" : "테이블 번호:";
-      step1.style.display="none"; step2.style.display="block";
+    // 체크아웃 → Step2 모달
+    checkoutBtn.onclick = () => {
+      const type = document.querySelector('input[name="orderType"]:checked').value;
+      if (type === "dinein") {
+        addrLabel.textContent = "테이블 번호:";
+        orderHint.textContent = "📝 매장식사 선택 시 테이블 번호나 수령인 이름을 입력해주세요.";
+        addrInput.placeholder = "테이블 번호를 입력하세요";
+      } else {
+        addrLabel.textContent = "배달 주소:";
+        orderHint.textContent = "";
+        addrInput.placeholder = "주소를 입력하세요";
+      }
+      step1.style.display = "none";
+      step2.style.display = "block";
       orderModal.classList.add("open");
     };
 
-    //주문완료
-    confirmOrder.onclick=()=>{
-      const del=delivererInput.value.trim(), addr=addrInput.value.trim();
-      if(!del||!addr){ alert("❗ 수령인과 주소/테이블 번호를 모두 입력하세요."); return; }
-      cart.forEach(o=>{
-        fetch("/api/orders",{method:"POST",headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            item:o.item,quantity:o.quantity,
-            toppings:o.toppings,deliverer:del,
-            address:addr,orderType:document.querySelector('input[name="orderType"]:checked').value
+    // 최종 주문
+    confirmOrder.onclick = () => {
+      const del  = delivererInput.value.trim();
+      const addr = addrInput.value.trim();
+      if (!del || !addr) {
+        alert("❗ 수령인과 주소/테이블 번호를 모두 입력해야 합니다.");
+        return;
+      }
+      cart.forEach(o => {
+        fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            item: o.item,
+            quantity: o.quantity,
+            toppings: o.toppings,
+            deliverer: del,
+            address: addr,
+            orderType: document.querySelector('input[name="orderType"]:checked').value
           })
         });
       });
       alert("✅ 주문이 완료되었습니다!");
-      cart.length=0; updateCartSummary();
+      cart.length = 0;
+      updateCartSummary();
       orderModal.classList.remove("open");
     };
 
     // 모달 닫기
-    orderModal.onclick=e=>{ if(e.target===orderModal) orderModal.classList.remove("open"); };
+    orderModal.addEventListener("click", e => {
+      if (e.target === orderModal) orderModal.classList.remove("open");
+    });
 
-    // 관리자
-    adminBtn.onclick=()=>{
-      const pw=prompt("관리자 비밀번호:");
-      if(pw==="admin123") window.location.href="/admin";
+    // 관리자 이동
+    adminBtn.onclick = () => {
+      const pw = prompt("관리자 비밀번호를 입력하세요:");
+      if (pw === "admin123") window.location.href = "/admin";
       else alert("❌ 비밀번호가 틀렸습니다");
     };
   </script>
