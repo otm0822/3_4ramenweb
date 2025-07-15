@@ -16,8 +16,7 @@ from sqlalchemy.orm import sessionmaker
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 SECRET_PASSWORD = "55983200"
 
-# MySQL(MariaDB) 연결 정보
-#  svc.sel5.cloudtype.app:31392, 비밀번호 dghs2018!@
+# MariaDB (root 계정) 연결 정보
 DATABASE_URL = (
     "mysql+pymysql://root:dghs2018!@"
     "svc.sel5.cloudtype.app:31392/ramen_orders"
@@ -37,14 +36,14 @@ class Order(Base):
     timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)                           # CSV: "김치,계란"
+    toppings   = Column(Text)                           # "김치,계란" 형태
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
     order_type = Column(Enum('delivery','dinein', name="order_types"),
                         nullable=False, default='delivery')
 
-# 테이블이 없으면 생성
+# 테이블 생성 (없으면)
 Base.metadata.create_all(bind=engine)
 
 # ─── Flask 앱 설정 ───────────────────────────────────────────
