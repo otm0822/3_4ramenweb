@@ -1,20 +1,57 @@
 # server.py
 import os
-import sqlite3
 from datetime import datetime
 from functools import wraps
+
 from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 
-# ─── 앱 설정 ───────────────────────────────────────────────
+from sqlalchemy import (
+    create_engine, Column, Integer, String, Boolean, Text, DateTime, Enum
+)
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# ─── 설정 ─────────────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "orders.db")
 SECRET_PASSWORD = "55983200"
 
+# MySQL(MariaDB) 연결 정보
+#  svc.sel5.cloudtype.app:31392, 비밀번호 dghs2018!@
+DATABASE_URL = (
+    "mysql+pymysql://root:dghs2018!@"
+    "svc.sel5.cloudtype.app:31392/ramen_orders"
+    "?charset=utf8mb4"
+)
+
+# ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
+engine = create_engine(DATABASE_URL, echo=False)
+SessionLocal = sessionmaker(bind=engine)
+Base = declarative_base()
+
+# ─── ORM 모델 정의 ─────────────────────────────────────────────
+class Order(Base):
+    __tablename__ = "orders"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
+    item       = Column(String(100), nullable=False)
+    quantity   = Column(Integer, nullable=False)
+    toppings   = Column(Text)                           # CSV: "김치,계란"
+    deliverer  = Column(String(100))
+    address    = Column(Text)
+    completed  = Column(Boolean, default=False, nullable=False)
+    order_type = Column(Enum('delivery','dinein', name="order_types"),
+                        nullable=False, default='delivery')
+
+# 테이블이 없으면 생성
+Base.metadata.create_all(bind=engine)
+
+# ─── Flask 앱 설정 ───────────────────────────────────────────
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
 
-# ─── HTTP Basic Auth 헬퍼 ───────────────────────────────────
+# ─── HTTP Basic Auth 헬퍼 ────────────────────────────────────
 def check_auth(password):
     return password == SECRET_PASSWORD
 
@@ -33,24 +70,6 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-# ─── DB 초기화 ───────────────────────────────────────────────
-conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-c = conn.cursor()
-c.execute("""
-CREATE TABLE IF NOT EXISTS orders (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp   TEXT,
-    item        TEXT,
-    quantity    INTEGER,
-    toppings    TEXT,
-    deliverer   TEXT,
-    address     TEXT,
-    completed   INTEGER DEFAULT 0,
-    order_type  TEXT
-)
-""")
-conn.commit()
-
 # ─── 정적 파일 서빙 ───────────────────────────────────────────
 @app.route("/")
 def serve_index():
@@ -64,64 +83,67 @@ def serve_admin():
 # ─── 주문 조회 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
-    c.execute("""
-      SELECT id, timestamp, item, quantity, toppings, deliverer, address, completed, order_type
-      FROM orders ORDER BY id DESC
-    """)
-    rows = c.fetchall()
-    orders = []
-    for r in rows:
-        orders.append({
-            "id":         r[0],
-            "timestamp":  r[1],
-            "item":       r[2],
-            "quantity":   r[3],
-            "toppings":   r[4].split(",") if r[4] else [],
-            "deliverer":  r[5],
-            "address":    r[6],
-            "completed":  bool(r[7]),
-            "orderType":  r[8]
+    db = SessionLocal()
+    orders = db.query(Order).order_by(Order.id.desc()).all()
+    result = []
+    for o in orders:
+        result.append({
+            "id":        o.id,
+            "timestamp": o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "item":      o.item,
+            "quantity":  o.quantity,
+            "toppings":  o.toppings.split(",") if o.toppings else [],
+            "deliverer": o.deliverer,
+            "address":   o.address,
+            "completed": o.completed,
+            "orderType": o.order_type
         })
-    return jsonify(orders), 200
+    db.close()
+    return jsonify(result), 200
 
 # ─── 주문 등록 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["POST"])
 def create_order():
     data = request.get_json()
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    toppings = ",".join(data.get("toppings", []))
-    order_type = data.get("orderType", "delivery")
-    c.execute("""
-      INSERT INTO orders
-        (timestamp, item, quantity, toppings, deliverer, address, order_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    """, (
-      ts,
-      data["item"],
-      data["quantity"],
-      toppings,
-      data["deliverer"],
-      data["address"],
-      order_type
-    ))
-    conn.commit()
+    db = SessionLocal()
+    toppings_csv = ",".join(data.get("toppings", []))
+    new_order = Order(
+        timestamp  = datetime.now(),
+        item       = data["item"],
+        quantity   = data["quantity"],
+        toppings   = toppings_csv,
+        deliverer  = data.get("deliverer", ""),
+        address    = data.get("address", ""),
+        order_type = data.get("orderType", "delivery")
+    )
+    db.add(new_order)
+    db.commit()
+    db.close()
     return jsonify(status="ok"), 201
 
 # ─── 주문 완료 처리 ───────────────────────────────────────────
 @app.route("/api/orders/<int:order_id>/complete", methods=["POST"])
 def complete_order(order_id):
-    c.execute("UPDATE orders SET completed = 1 WHERE id = ?", (order_id,))
-    conn.commit()
+    db = SessionLocal()
+    o = db.query(Order).get(order_id)
+    if o:
+        o.completed = True
+        db.commit()
+    db.close()
     return jsonify(status="ok"), 200
 
 # ─── 주문 완료 취소 ───────────────────────────────────────────
 @app.route("/api/orders/<int:order_id>/uncomplete", methods=["POST"])
 def uncomplete_order(order_id):
-    c.execute("UPDATE orders SET completed = 0 WHERE id = ?", (order_id,))
-    conn.commit()
+    db = SessionLocal()
+    o = db.query(Order).get(order_id)
+    if o:
+        o.completed = False
+        db.commit()
+    db.close()
     return jsonify(status="ok"), 200
 
-# ─── 앱 실행 ─────────────────────────────────────────────────
+# ─── 서버 실행 ───────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
