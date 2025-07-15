@@ -10,30 +10,25 @@
     body { display: flex; flex-direction: column; font-family: sans-serif; padding: 1rem; padding-bottom: 5rem; }
     h1 { text-align: center; margin-bottom: 1rem; }
 
-    /* 메뉴 그리드 */
     .grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); grid-auto-rows: 1fr; gap: 1rem; max-width: 600px; margin: 0 auto; align-content: space-around; margin-bottom: 5rem; }
     .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; height: 100%; }
     .card img { flex: 1; width: 100%; object-fit: cover; border-radius: 4px; }
     .caption { margin: 0.5rem 0 1rem; text-align: center; font-weight: bold; font-size: 0.9rem; }
 
-    /* 주문 유형 토글 버튼 */
     #orderTypeGroup { display: flex; gap: 0.5rem; }
     #orderTypeGroup input[type="radio"] { display: none; }
     #orderTypeGroup label { padding: 0.5rem 1rem; border: 1px solid #007bff; border-radius: 4px; cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; color: #007bff; }
     #orderTypeGroup input[type="radio"]:checked + label { background: #007bff; color: #fff; border-color: #007bff; }
 
-    /* 카트 요약(고정 푸터) */
     #cartSummary { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #ddd; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 999; }
     #cartSummary .left, #cartSummary .right { display: flex; align-items: center; gap: 0.5rem; }
     #cartSummary button { padding: 0.4rem 0.8rem; cursor: pointer; }
 
-    /* 주문 모달 */
     .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem; }
     .modal.open { display: flex; }
     .modal-content { background: #fff; padding: 1rem; border-radius: 8px; width: 100%; max-width: 360px; }
     .modal-content h2 { margin-top: 0; text-align: center; }
 
-    /* Step 1: 메뉴 선택 */
     #step1 .toppings { border-top: 1px solid #eee; margin: 0.5rem 0; max-height: 150px; overflow-y: auto; }
     #step1 .topping-option { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
     #step1 .topping-option:last-child { border-bottom: none; }
@@ -44,21 +39,18 @@
     #step1 #totalPrice { font-weight: bold; }
     #step1 #addToCart { background: #007bff; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
 
-    /* Step 2: 리뷰 */
     #stepReview { display: none; }
     #stepReview h3 { text-align: center; margin-top: 0; }
     #stepReview p { text-align: center; font-weight: bold; margin-bottom: 0.5rem; }
     #stepReview ul { list-style: none; padding: 0; margin: 0.5rem 0; max-height: 150px; overflow-y: auto; }
     #stepReview button { margin: 0.25rem; padding: 0.5rem 1rem; cursor: pointer; }
 
-    /* Step 3: 정보 입력 */
     #step2 { display: none; }
     #step2 p { color: #555; font-size: 0.9rem; margin-bottom: 0.5rem; }
     #step2 label { display: block; margin: 0.5rem 0 0.2rem; }
     #step2 input, #step2 button { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; font-size: 1rem; }
     #deliveryFields, #dineinField { display: none; }
 
-    /* 관리자 버튼 */
     #adminBtn { position: fixed; top: 1rem; right: 1rem; padding: 0.4rem 0.8rem; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
@@ -83,12 +75,10 @@
     </div>
   </div>
 
-  <!-- 주문 모달 -->
   <div class="modal" id="orderModal">
     <div class="modal-content">
       <h2 id="modalTitle">메뉴명</h2>
 
-      <!-- Step 1: 메뉴 선택 -->
       <div id="step1">
         <div class="toppings" id="toppingsBox"></div>
         <div class="quantity">
@@ -100,7 +90,6 @@
         </div>
       </div>
 
-      <!-- Step 2: 리뷰 -->
       <div id="stepReview">
         <h3>주문 내역 확인</h3>
         <p>주문 유형: <span id="reviewOrderType">배달</span></p>
@@ -111,7 +100,6 @@
         </div>
       </div>
 
-      <!-- Step 3: 정보 입력 -->
       <div id="step2">
         <p id="orderHint"></p>
         <div id="dineinField">
@@ -141,7 +129,6 @@
     const toppingsData = { 김치:0, 어묵:500, 계란:500 };
     let selectedDish, basePrice, qty, cart = [];
 
-    // DOM 요소 가져오기
     const menuGrid       = document.getElementById("menuGrid"),
           orderModal     = document.getElementById("orderModal"),
           modalTitle     = document.getElementById("modalTitle"),
@@ -186,25 +173,21 @@
       cartTotal.textContent = `${price.toLocaleString()}원`;
     }
 
-    // 메뉴 그리기
     menu.forEach((it, idx) => {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
         <img src="${it.img}" data-idx="${idx}" alt="${it.name}"/>
-        <div class="caption">${it.name}</div>
-      `;
+        <div class="caption">${it.name}</div>`;
       menuGrid.append(card);
     });
 
-    // 메뉴 클릭 → Step1
     menuGrid.addEventListener("click", e => {
       if (e.target.tagName !== "IMG") return;
       const it = menu[+e.target.dataset.idx];
       selectedDish = it.name; basePrice = it.price; qty = 1;
       modalTitle.textContent = selectedDish;
 
-      // 컵떡볶이면 어묵·계란, 그 외엔 김치만
       const available = (selectedDish === "컵떡볶이")
         ? ["어묵", "계란"]
         : ["김치"];
@@ -212,8 +195,7 @@
       toppingsBox.innerHTML = available.map(n =>
         `<label class="topping-option">
            <input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)
-         </label>`
-      ).join("");
+         </label>`).join("");
 
       step1.style.display="block";
       stepReview.style.display="none";
@@ -225,11 +207,9 @@
         .forEach(cb => cb.addEventListener("change", updateTotal));
     });
 
-    // 수량 조절
     decQty.onclick = ()=>{ if(qty>1)qty--; qtyLabel.textContent=qty; updateTotal(); };
     incQty.onclick = ()=>{ qty++; qtyLabel.textContent=qty; updateTotal(); };
 
-    // 장바구니 담기
     addToCart.onclick = ()=>{
       const tops = Array.from(toppingsBox.querySelectorAll("input:checked"))
                         .map(cb=>cb.value);
@@ -238,12 +218,10 @@
       orderModal.classList.remove("open");
     };
 
-    // 주문 확인 → StepReview
     checkoutBtn.onclick = () => {
       const type = document.querySelector('input[name="orderType"]:checked').value;
       reviewOrderType.textContent = type==="dinein"? "매장식사" : "배달";
       step1.style.display = "none";
-      step2.style.display = "none";
       reviewList.innerHTML = cart.map(o =>
         `<li>${o.item} x${o.quantity}${o.toppings.length?` (${o.toppings.join(', ')})`:''}</li>`
       ).join('');
@@ -252,14 +230,12 @@
       orderModal.classList.add("open");
     };
 
-    // 수정하기 → Step1
     editOrder.onclick = ()=>{
       modalTitle.style.display = "";
       stepReview.style.display="none";
       orderModal.classList.remove("open");
     };
 
-    // 확인 → 정보 입력
     confirmReview.onclick = ()=>{
       stepReview.style.display="none";
       const type = document.querySelector('input[name="orderType"]:checked').value;
@@ -275,7 +251,6 @@
       step2.style.display="block";
     };
 
-    // 최종 주문
     confirmOrder.onclick = ()=>{
       const type = document.querySelector('input[name="orderType"]:checked').value;
       let del, addr;
@@ -306,16 +281,12 @@
       orderModal.classList.remove("open");
     };
 
-    // 모달 닫기
     orderModal.addEventListener("click", e=>{
       if(e.target===orderModal) orderModal.classList.remove("open");
     });
 
-    // 관리자 이동
-    adminBtn.onclick = ()=>{
-      const pw = prompt("관리자 비밀번호를 입력하세요:");
-      if(pw==="070112") window.location.href="/admin";
-      else alert("❌ 비밀번호가 틀렸습니다");
+    adminBtn.onclick = () => {
+      window.location.href = "/admin";
     };
   </script>
 </body>

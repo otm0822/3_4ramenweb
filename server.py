@@ -1,15 +1,37 @@
+# server.py
 import os
 import sqlite3
 from datetime import datetime
-from flask import Flask, request, jsonify, send_from_directory
+from functools import wraps
+from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 
 # ─── 앱 설정 ───────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "orders.db")
+SECRET_PASSWORD = "070112"
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
+
+# ─── HTTP Basic Auth 헬퍼 ───────────────────────────────────
+def check_auth(password):
+    return password == SECRET_PASSWORD
+
+def authenticate():
+    return Response(
+        '로그인이 필요합니다.', 401,
+        {'WWW-Authenticate': 'Basic realm="Login Required"'}
+    )
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
 
 # ─── DB 초기화 ───────────────────────────────────────────────
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
@@ -24,7 +46,7 @@ CREATE TABLE IF NOT EXISTS orders (
     deliverer   TEXT,
     address     TEXT,
     completed   INTEGER DEFAULT 0,
-    order_type  TEXT    -- 'delivery' or 'dinein'
+    order_type  TEXT
 )
 """)
 conn.commit()
@@ -35,6 +57,7 @@ def serve_index():
     return send_from_directory(BASE_DIR, "index.html")
 
 @app.route("/admin")
+@requires_auth
 def serve_admin():
     return send_from_directory(BASE_DIR, "admin.html")
 
