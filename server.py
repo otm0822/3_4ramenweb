@@ -1,129 +1,185 @@
-# server.py
+# ─────────────────────── server.py ───────────────────────
+"""
+라면 주문 키오스크 백엔드
+- Flask + SQLAlchemy + PyMySQL
+- Cloudtype MariaDB(root/dghs2018!@) 연결
+    호스트 : svc.sel5.cloudtype.app
+    포트   : 31392
+- DB·테이블이 이미 있으면 덮어쓰기(drop 후 재생성)
+"""
+
 import os, sys
 from datetime import datetime
 from functools import wraps
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlencode
 
 from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
+
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Boolean,
-    Text, DateTime, Enum, event
+    create_engine, Column, Integer, String, Text,
+    Boolean, DateTime, Enum, event, inspect, text
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# ─── DB 접속 정보 ─────────────────────────────────────────────
-DB_HOST = "svc.sel5.cloudtype.app"; DB_PORT = 31392
-DB_USER = "root"; RAW_PW = "dghs2018!@"; DB_NAME = "ramen_orders"
+# ───────────────────── 1. DB 설정 ──────────────────────────
+DB_HOST = "svc.sel5.cloudtype.app"
+DB_PORT = 31392
+DB_USER = "root"
+RAW_PW  = "dghs2018!@"
 DB_PW   = quote_plus(RAW_PW)
+DB_NAME = "ramen_orders"
+_q      = urlencode({"charset": "utf8mb4"})
 
-DATABASE_URL = (
-    f"mysql+mysqlconnector://{DB_USER}:{DB_PW}"
-    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
+# 데이터베이스가 없으면 생성
+bootstrap_engine = create_engine(
+    f"mysql+pymysql://{DB_USER}:{DB_PW}@{DB_HOST}:{DB_PORT}/?{_q}",
+    pool_pre_ping=True,
 )
+with bootstrap_engine.connect() as conn:
+    conn.execute(
+        text(f"""
+            CREATE DATABASE IF NOT EXISTS {DB_NAME}
+              DEFAULT CHARACTER SET utf8mb4
+              COLLATE utf8mb4_general_ci
+        """)
+    )
 
-# ─── SQLAlchemy ─────────────────────────────────────────────
+# 실제 사용 엔진
+DATABASE_URL = (
+    f"mysql+pymysql://{DB_USER}:{DB_PW}@{DB_HOST}:{DB_PORT}/{DB_NAME}?{_q}"
+)
 engine = create_engine(
     DATABASE_URL,
-    echo=True,                   # SQL문 그대로 표준출력
     pool_pre_ping=True,
-    connect_args={"collation": "utf8mb4_general_ci"}  # MariaDB용
+    pool_recycle=3600,
+    encoding="utf8mb4",
 )
+
+@event.listens_for(engine, "connect")
+def _set_charset(conn, _):
+    with conn.cursor() as cur:
+        cur.execute("SET NAMES utf8mb4 COLLATE utf8mb4_general_ci")
+
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
-# flush 단계마다 어떤 객체를 INSERT/UPDATE 하는지 로그
-@event.listens_for(Session, "after_flush")
-def _after_flush(sess, ctx):
-    for o in sess.new:     print(f"[SQLA] INSERT 예정 → {o!r}", file=sys.stderr)
-    for o in sess.dirty:   print(f"[SQLA] UPDATE 예정 → {o!r}", file=sys.stderr)
-    for o in sess.deleted: print(f"[SQLA] DELETE 예정 → {o!r}", file=sys.stderr)
-
+# ───────────────────── 2. ORM 모델 ─────────────────────────
 class Order(Base):
     __tablename__ = "orders"
     id         = Column(Integer, primary_key=True)
     timestamp  = Column(DateTime, default=datetime.utcnow, nullable=False)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)
+    toppings   = Column(Text)                      # 쉼표 구분
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
-    order_type = Column(Enum("delivery","dinein", name="order_types"),
-                        default="delivery", nullable=False)
-    def __repr__(self):
-        return f"<Order id={self.id} {self.item}×{self.quantity}>"
+    order_type = Column(
+        Enum("delivery", "dinein", name="order_types"),
+        default="delivery", nullable=False
+    )
 
+# 테이블 덮어쓰기: 있으면 DROP → CREATE
+if inspect(engine).has_table(Order.__tablename__):
+    Base.metadata.drop_all(bind=engine, tables=[Order.__table__])
 Base.metadata.create_all(bind=engine)
 
-# ─── Flask ──────────────────────────────────────────────────
-app = Flask(__name__,
-            static_folder=os.path.abspath(os.path.dirname(__file__)),
-            static_url_path="")
+# ───────────────────── 3. Flask 설정 ───────────────────────
+app = Flask(
+    __name__,
+    static_folder=os.path.abspath(os.path.dirname(__file__)),
+    static_url_path=""
+)
 CORS(app)
 
-SECRET_PASSWORD = "55983200"
-def _auth(p): return p == SECRET_PASSWORD
-def _need(): return Response('로그인이 필요합니다.', 401,
-                              {'WWW-Authenticate':'Basic realm="Login Required"'})
-def requires_auth(f):
-    @wraps(f)
+# 간단한 Basic-Auth (admin 보호)
+ADMIN_PASS = "55983200"   # 필요하면 환경변수로 변경
+def _need_auth():
+    return Response("인증 필요", 401,
+                    {"WWW-Authenticate": 'Basic realm="Login Required"'})
+def requires_auth(fn):
+    @wraps(fn)
     def _wrap(*a, **kw):
         auth = request.authorization
-        if not auth or not _auth(auth.password):
-            return _need()
-        return f(*a, **kw)
+        if not auth or auth.password != ADMIN_PASS:
+            return _need_auth()
+        return fn(*a, **kw)
     return _wrap
 
+# ───────────────────── 4. 정적 파일 ────────────────────────
 @app.route("/")
-def idx(): return send_from_directory(app.static_folder, "index.html")
-@app.route("/admin"); @requires_auth
-def adm(): return send_from_directory(app.static_folder, "admin.html")
+def index():  # 고객용 화면
+    return send_from_directory(app.static_folder, "index.html")
 
-# ─── API ────────────────────────────────────────────────────
+@app.route("/admin")
+@requires_auth
+def admin():  # 관리자 화면
+    return send_from_directory(app.static_folder, "admin.html")
+
+# ───────────────────── 5. REST API ─────────────────────────
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
-    db = SessionLocal()
-    data = [{
-        "id":o.id,"timestamp":o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-        "item":o.item,"quantity":o.quantity,
-        "toppings":o.toppings.split(",") if o.toppings else [],
-        "deliverer":o.deliverer,"address":o.address,
-        "completed":o.completed,"orderType":o.order_type
-    } for o in db.query(Order).order_by(Order.id.desc())]
-    db.close(); return jsonify(data)
+    db: Session = SessionLocal()
+    rows = db.query(Order).order_by(Order.id.desc()).all()
+    db.close()
+    return jsonify([
+        {
+            "id": o.id,
+            "timestamp": o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            "item": o.item,
+            "quantity": o.quantity,
+            "toppings": o.toppings.split(",") if o.toppings else [],
+            "deliverer": o.deliverer,
+            "address": o.address,
+            "completed": o.completed,
+            "orderType": o.order_type,
+        } for o in rows
+    ])
 
 @app.route("/api/orders", methods=["POST"])
 def create_order():
-    j = request.get_json()
-    db = SessionLocal()
-    o = Order(
-        item=j["item"], quantity=j["quantity"],
-        toppings=",".join(j.get("toppings", [])),
-        deliverer=j.get("deliverer",""), address=j.get("address",""),
-        order_type=j.get("orderType","delivery")
+    data = request.get_json(force=True)
+    new = Order(
+        item       = data["item"],
+        quantity   = data["quantity"],
+        toppings   = ",".join(data.get("toppings", [])),
+        deliverer  = data.get("deliverer", ""),
+        address    = data.get("address", ""),
+        order_type = data.get("orderType", "delivery"),
     )
-    db.add(o)
+    db: Session = SessionLocal()
+    db.add(new)
     try:
         db.commit()
-        print(f"[COMMIT] 새 주문 id={o.id}", file=sys.stderr)
     except Exception as e:
-        db.rollback(); print("!!! COMMIT ERROR:", e, file=sys.stderr); raise
+        db.rollback()
+        print("DB ERROR:", e, file=sys.stderr)
+        return jsonify(error=str(e)), 500
     finally:
         db.close()
     return jsonify(status="ok"), 201
 
 @app.route("/api/orders/<int:oid>/complete", methods=["POST"])
 def complete_order(oid):
-    db=SessionLocal(); o=db.query(Order).get(oid)
-    if o: o.completed=True; db.commit(); print(f"[COMMIT] 완료 id={oid}", file=sys.stderr)
-    db.close(); return jsonify(status="ok")
+    db: Session = SessionLocal()
+    row = db.get(Order, oid)
+    if row:
+        row.completed = True
+        db.commit()
+    db.close()
+    return jsonify(status="ok")
+
 @app.route("/api/orders/<int:oid>/uncomplete", methods=["POST"])
 def uncomplete_order(oid):
-    db=SessionLocal(); o=db.query(Order).get(oid)
-    if o: o.completed=False; db.commit(); print(f"[COMMIT] 취소 id={oid}", file=sys.stderr)
-    db.close(); return jsonify(status="ok")
+    db: Session = SessionLocal()
+    row = db.get(Order, oid)
+    if row:
+        row.completed = False
+        db.commit()
+    db.close()
+    return jsonify(status="ok")
 
+# ───────────────────── 6. 실행 ─────────────────────────────
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
