@@ -131,21 +131,21 @@
 
   <script>
     const menu = [
-      { name:"기본 라면", img:"images/jiheramen.jpeg", price:4000 },
-      { name:"치즈 라면", img:"images/cheese_ramen.jpg", price:4500 },
-      { name:"떡 라면",   img:"images/tteok_ramen.jpg",   price:4500 },
-      { name:"만두 라면", img:"images/mandu_ramen.jpg",   price:4500 },
-      { name:"랜덤 라면", img:"images/random.jpeg",       price:4300 },
-      { name:"햇반",      img:"images/haetban.jpg",       price:1000 }
+      { name:"기본 라면", img:"images/jiheramen.jpeg", price:3000 },
+      { name:"치즈 라면", img:"images/cheese_ramen.jpg", price:3500 },
+      { name:"떡 라면",   img:"images/tteok_ramen.jpg",   price:3500 },
+      { name:"만두 라면", img:"images/mandu_ramen.jpg",   price:4000 },
+      { name:"컵떡볶이", img:"images/tteokbbokgi.jpg",   price:2000 },
+      { name:"햇반",      img:"images/haetban.jpg",     price:1000 }
     ];
-    const toppingsData = { 김치:0 };
+    const toppingsData = { 김치:0, 어묵:500, 계란:500 };
     let selectedDish, basePrice, qty, cart = [];
 
-    // DOM
+    // DOM 요소 가져오기
     const menuGrid       = document.getElementById("menuGrid"),
           orderModal     = document.getElementById("orderModal"),
           modalTitle     = document.getElementById("modalTitle"),
-          toppingsBox    = document.getElementById("toppingsBox"),
+          toppingsBox    = document.getElementById("toppingsBox"), 
           decQty         = document.getElementById("decQty"),
           incQty         = document.getElementById("incQty"),
           qtyLabel       = document.getElementById("qtyLabel"),
@@ -186,7 +186,7 @@
       cartTotal.textContent = `${price.toLocaleString()}원`;
     }
 
-    // 메뉴 렌더
+    // 메뉴 그리기
     menu.forEach((it, idx) => {
       const card = document.createElement("div");
       card.className = "card";
@@ -197,33 +197,48 @@
       menuGrid.append(card);
     });
 
-    // Step1: 메뉴선택
+    // 메뉴 클릭 → Step1
     menuGrid.addEventListener("click", e => {
       if (e.target.tagName !== "IMG") return;
       const it = menu[+e.target.dataset.idx];
       selectedDish = it.name; basePrice = it.price; qty = 1;
       modalTitle.textContent = selectedDish;
-      toppingsBox.innerHTML = Object.keys(toppingsData).map(n =>
-        `<label class="topping-option"><input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)</label>`
+
+      // 컵떡볶이면 어묵·계란, 그 외엔 김치만
+      const available = (selectedDish === "컵떡볶이")
+        ? ["어묵", "계란"]
+        : ["김치"];
+
+      toppingsBox.innerHTML = available.map(n =>
+        `<label class="topping-option">
+           <input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)
+         </label>`
       ).join("");
-      step1.style.display="block"; stepReview.style.display="none"; step2.style.display="none";
-      qtyLabel.textContent = qty; updateTotal();
+
+      step1.style.display="block";
+      stepReview.style.display="none";
+      step2.style.display="none";
+      qtyLabel.textContent = qty;
+      updateTotal();
       orderModal.classList.add("open");
-      toppingsBox.querySelectorAll("input").forEach(cb=>cb.addEventListener("change",updateTotal));
+      toppingsBox.querySelectorAll("input")
+        .forEach(cb => cb.addEventListener("change", updateTotal));
     });
 
-    decQty.onclick = ()=>{ if(qty>1)qty--;qtyLabel.textContent=qty;updateTotal(); };
-    incQty.onclick = ()=>{ qty++;qtyLabel.textContent=qty;updateTotal(); };
+    // 수량 조절
+    decQty.onclick = ()=>{ if(qty>1)qty--; qtyLabel.textContent=qty; updateTotal(); };
+    incQty.onclick = ()=>{ qty++; qtyLabel.textContent=qty; updateTotal(); };
 
-    // 담기 (장바구니 추가)
+    // 장바구니 담기
     addToCart.onclick = ()=>{
-      const tops = Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb=>cb.value);
+      const tops = Array.from(toppingsBox.querySelectorAll("input:checked"))
+                        .map(cb=>cb.value);
       cart.push({ item:selectedDish, quantity:qty, toppings:tops });
       updateCartSummary();
       orderModal.classList.remove("open");
     };
 
-    // 주문 확인 클릭 → StepReview
+    // 주문 확인 → StepReview
     checkoutBtn.onclick = () => {
       const type = document.querySelector('input[name="orderType"]:checked').value;
       reviewOrderType.textContent = type==="dinein"? "매장식사" : "배달";
@@ -232,34 +247,35 @@
       reviewList.innerHTML = cart.map(o =>
         `<li>${o.item} x${o.quantity}${o.toppings.length?` (${o.toppings.join(', ')})`:''}</li>`
       ).join('');
-    
-        // 제목 숨기기
-        modalTitle.style.display = "none";
-
-        stepReview.style.display = "block";
-        orderModal.classList.add("open");
+      modalTitle.style.display = "none";
+      stepReview.style.display = "block";
+      orderModal.classList.add("open");
     };
-    // 수정하기
+
+    // 수정하기 → Step1
     editOrder.onclick = ()=>{
+      modalTitle.style.display = "";
       stepReview.style.display="none";
       orderModal.classList.remove("open");
     };
 
-    // 확인 → Step2: 정보 입력
+    // 확인 → 정보 입력
     confirmReview.onclick = ()=>{
       stepReview.style.display="none";
       const type = document.querySelector('input[name="orderType"]:checked').value;
       if(type==="dinein"){
         orderHint.textContent = "📝 매장식사 시 테이블 번호 또는 수령인 이름을 입력해주세요.";
-        dineinField.style.display="block"; deliveryFields.style.display="none";
+        dineinField.style.display="block";
+        deliveryFields.style.display="none";
       } else {
         orderHint.textContent = "";
-        dineinField.style.display="none"; deliveryFields.style.display="block";
+        dineinField.style.display="none";
+        deliveryFields.style.display="block";
       }
       step2.style.display="block";
     };
 
-    // 최종 주문 전송
+    // 최종 주문
     confirmOrder.onclick = ()=>{
       const type = document.querySelector('input[name="orderType"]:checked').value;
       let del, addr;
