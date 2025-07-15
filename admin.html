@@ -19,11 +19,7 @@
     table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
     th, td { border: 1px solid #aaa; padding: 0.4rem; text-align: center; }
 
-    /* 뒤로가기 버튼 */
     .btn-back { margin-top: 1rem; }
-
-    /* Nav height 조정 (옵션) */
-    .nav-tabs .nav-link { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -32,66 +28,52 @@
   <!-- Nav tabs -->
   <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
     <li class="nav-item" role="presentation">
-      <button
-        class="nav-link active"
-        id="pending-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#pending"
-        type="button"
-      >현재 주문</button>
+      <button class="nav-link active"
+              data-bs-toggle="tab" data-bs-target="#pending"
+              type="button">현재 주문</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button
-        class="nav-link"
-        id="completed-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#completed"
-        type="button"
-      >주문 완료</button>
+      <button class="nav-link"
+              data-bs-toggle="tab" data-bs-target="#completed"
+              type="button">주문 완료</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button
-        class="nav-link"
-        id="analytics-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#analytics"
-        type="button"
-      >매출 분석</button>
+      <button class="nav-link"
+              data-bs-toggle="tab" data-bs-target="#analytics"
+              type="button">매출 분석</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button
-        class="nav-link"
-        id="tteok-tab"
-        data-bs-toggle="tab"
-        data-bs-target="#tteok"
-        type="button"
-      >떡볶이 주문</button>
+      <button class="nav-link"
+              data-bs-toggle="tab" data-bs-target="#tteok"
+              type="button">떡볶이 주문</button>
     </li>
   </ul>
 
   <div class="tab-content">
     <!-- 1) 현재 주문 -->
-    <div
-      class="tab-pane fade show active"
-      id="pending"
-      role="tabpanel"
-    >
+    <div class="tab-pane fade show active" id="pending" role="tabpanel">
       <div class="d-flex-wrap">
         <div class="half">
           <h4>매장주문 (대기)</h4>
           <table>
-            <thead><tr>
-              <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>테이블</th><th>완료</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>완료</th>
+              </tr>
+            </thead>
             <tbody id="pendingDinein"></tbody>
           </table>
         </div>
         <div class="half">
           <h4>배달주문 (대기)</h4>
           <table>
-            <thead><tr>
-              <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소</th><th>완료</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소</th><th>완료</th>
+              </tr>
+            </thead>
             <tbody id="pendingDelivery"></tbody>
           </table>
         </div>
@@ -102,9 +84,12 @@
     <div class="tab-pane fade" id="completed" role="tabpanel">
       <h4>완료된 주문</h4>
       <table>
-        <thead><tr>
-          <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소/테이블</th><th>취소</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th>시간</th><th>메뉴</th><th>수량</th>
+            <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>취소</th>
+          </tr>
+        </thead>
         <tbody id="completedBody"></tbody>
       </table>
     </div>
@@ -123,23 +108,31 @@
         <div class="half">
           <h5>대기 주문</h5>
           <table>
-            <thead><tr>
-              <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소/테이블</th><th>완료</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>완료</th>
+              </tr>
+            </thead>
             <tbody id="pendingTteok"></tbody>
           </table>
         </div>
         <div class="half">
           <h5>완료 주문</h5>
           <table>
-            <thead><tr>
-              <th>시간</th><th>메뉴</th><th>수량</th><th>토핑</th><th>수령인</th><th>주소/테이블</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소/테이블</th>
+              </tr>
+            </thead>
             <tbody id="completedTteok"></tbody>
           </table>
         </div>
       </div>
-      <div class="fw-bold">🍲 총 매출 (떡볶이): <span id="tteokSales">0원</span></div>
+      <div class="fw-bold">
+        🍲 총 매출 (떡볶이): <span id="tteokSales">0원</span>
+      </div>
     </div>
   </div>
 
@@ -154,39 +147,48 @@
       "기본 라면":4000, "치즈 라면":4500,
       "떡 라면":4500,   "만두 라면":4500,
       "랜덤 라면":4300,  "햇반":1500,
-      "컵떡볶이":2000    // 필요시 추가
+      "컵떡볶이":2000
     };
     const toppingPrices = { 계란:700, 파:700, 김치:700 };
-
-    // 떡볶이로 간주할 메뉴 이름 목록
-    const tteokItems = ["떡 라면", "컵떡볶이"];
+    const tteokItems = ["떡 라면","컵떡볶이"];
 
     async function loadAdmin() {
       const res = await fetch('/api/orders');
       const orders = await res.json();
 
-      // 1) 현재 주문 (미완료)
-      const pendingI = orders.filter(o => !o.completed && o.orderType==='dinein');
-      const pendingD = orders.filter(o => !o.completed && o.orderType==='delivery');
+      // 일반 주문 (떡볶이 제외)
+      const pendingI = orders.filter(o =>
+        !o.completed &&
+        o.orderType==='dinein' &&
+        !tteokItems.includes(o.item)
+      );
+      const pendingD = orders.filter(o =>
+        !o.completed &&
+        o.orderType==='delivery' &&
+        !tteokItems.includes(o.item)
+      );
+      const completedAll = orders.filter(o =>
+        o.completed &&
+        !tteokItems.includes(o.item)
+      );
 
-      // 2) 전체 완료 주문
-      const completedAll = orders.filter(o => o.completed);
+      // 떡볶이 전용
+      const pendingT = orders.filter(o =>
+        !o.completed && tteokItems.includes(o.item)
+      );
+      const completedT = orders.filter(o =>
+        o.completed && tteokItems.includes(o.item)
+      );
 
-      // 3) 떡볶이 전용
-      const pendingT = orders.filter(o => !o.completed && tteokItems.includes(o.item));
-      const completedT = orders.filter(o => o.completed && tteokItems.includes(o.item));
-
-      // 렌더링—현재 주문
+      // 렌더링: 현재 주문
       document.getElementById('pendingDinein').innerHTML = pendingI.map(o => `
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
+          <td>${o.deliverer}</td><td>${o.address}</td>
           <td>
-            <button class="btn btn-sm btn-success" onclick="completeOrder(${o.id})">
+            <button class="btn btn-sm btn-success"
+                    onclick="completeOrder(${o.id})">
               완료
             </button>
           </td>
@@ -194,47 +196,42 @@
       `).join('');
       document.getElementById('pendingDelivery').innerHTML = pendingD.map(o => `
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
+          <td>${o.deliverer}</td><td>${o.address}</td>
           <td>
-            <button class="btn btn-sm btn-success" onclick="completeOrder(${o.id})">
+            <button class="btn btn-sm btn-success"
+                    onclick="completeOrder(${o.id})">
               완료
             </button>
           </td>
         </tr>
       `).join('');
-      // 렌더링—전체 완료
+
+      // 렌더링: 완료 주문
       document.getElementById('completedBody').innerHTML = completedAll.map(o => `
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
+          <td>${o.deliverer}</td><td>${o.address}</td>
           <td>
-            <button class="btn btn-sm btn-warning" onclick="cancelComplete(${o.id})">
+            <button class="btn btn-sm btn-warning"
+                    onclick="cancelComplete(${o.id})">
               취소
             </button>
           </td>
         </tr>
       `).join('');
 
-      // 렌더링—떡볶이 전용
+      // 렌더링: 떡볶이 전용
       document.getElementById('pendingTteok').innerHTML = pendingT.map(o => `
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
+          <td>${o.deliverer}</td><td>${o.address}</td>
           <td>
-            <button class="btn btn-sm btn-success" onclick="completeOrder(${o.id})">
+            <button class="btn btn-sm btn-success"
+                    onclick="completeOrder(${o.id})">
               완료
             </button>
           </td>
@@ -242,27 +239,22 @@
       `).join('');
       document.getElementById('completedTteok').innerHTML = completedT.map(o => `
         <tr>
-          <td>${o.timestamp}</td>
-          <td>${o.item}</td>
-          <td>${o.quantity}</td>
+          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td>
-          <td>${o.address}</td>
+          <td>${o.deliverer}</td><td>${o.address}</td>
         </tr>
       `).join('');
 
       // 매출 분석 (떡볶이 제외)
-      const nonTteok = completedAll.filter(o => !tteokItems.includes(o.item));
+      const nonTteok = completedAll;
       const salesByItem = {}, salesByInterval = {};
       nonTteok.forEach(o => {
-        const base = menuPrices[o.item] || 0;
+        const base = menuPrices[o.item]||0;
         const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
-        const sale = (base + tSum) * o.quantity;
+        const sale = (base+tSum)*o.quantity;
         salesByItem[o.item] = (salesByItem[o.item]||0) + sale;
-
-        // 30분 단위
         const dt = new Date(o.timestamp);
-        dt.setMinutes(Math.floor(dt.getMinutes()/30)*30, 0, 0);
+        dt.setMinutes(Math.floor(dt.getMinutes()/30)*30,0,0);
         const label = dt.toISOString().slice(11,16);
         salesByInterval[label] = (salesByInterval[label]||0) + sale;
       });
@@ -274,7 +266,7 @@
       const tteokSales = completedT.reduce((sum,o) => {
         const base = menuPrices[o.item]||0;
         const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
-        return sum + (base + tSum) * o.quantity;
+        return sum + (base+tSum)*o.quantity;
       }, 0);
       document.getElementById('tteokSales').textContent =
         `${tteokSales.toLocaleString()}원`;
@@ -300,7 +292,7 @@
     }
 
     loadAdmin();
-    setInterval(loadAdmin, 5000);
+    setInterval(loadAdmin,5000);
   </script>
 </body>
 </html>
