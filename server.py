@@ -14,14 +14,14 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # ─── 설정 ─────────────────────────────────────────────────────
-BASE_DIR       = os.path.abspath(os.path.dirname(__file__))
+BASE_DIR        = os.path.abspath(os.path.dirname(__file__))
 SECRET_PASSWORD = "55983200"
 
-# MariaDB(root) 연결 정보 (하드코딩)
+# MariaDB 연결 정보 (mariadbconnector 드라이버 사용)
+# pip install sqlalchemy mariadb
 DATABASE_URL = (
-    "mysql+pymysql://root:dghs2018!@"
+    "mariadb+mariadbconnector://root:dghs2018!@"
     "svc.sel5.cloudtype.app:31392/ramen_orders"
-    "?charset=utf8mb4"
 )
 
 # ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
@@ -44,7 +44,7 @@ class Order(Base):
     order_type = Column(Enum('delivery','dinein', name="order_types"),
                         nullable=False, default='delivery')
 
-# ─── 테이블 생성 ───────────────────────────────────────────────
+# 테이블 생성 (없으면)
 Base.metadata.create_all(bind=engine)
 
 # ─── Flask 앱 설정 ───────────────────────────────────────────
