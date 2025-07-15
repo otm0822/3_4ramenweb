@@ -21,7 +21,7 @@ SECRET_PASSWORD = "55983200"
 # 내부 네트워크 호스트를 'db', 포트를 3306으로 가정합니다.
 DATABASE_URL = (
     "mysql+pymysql://root:dghs2018!@"
-    "db:3306/ramen_orders"
+    "svc.sel5.cloudtype.app:31392/ramen_orders"
     "?charset=utf8mb4"
 )
 
