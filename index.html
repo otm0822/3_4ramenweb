@@ -10,53 +10,91 @@
     body { display: flex; flex-direction: column; font-family: sans-serif; padding: 1rem; padding-bottom: 5rem; }
     h1 { text-align: center; margin-bottom: 1rem; }
 
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); grid-auto-rows: 1fr; gap: 1rem; max-width: 600px; margin: 0 auto; align-content: space-around; margin-bottom: 5rem; }
-    .card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; height: 100%; }
+    /* 버튼 스타일 */
+    .btn {
+      padding: 0.5rem 1rem;
+      margin: 0.3rem;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: fixed;
+      top: 1rem;
+      z-index: 1000;
+    }
+    #accountBtn     { right: 16rem; background: #17a2b8; }
+    #paymentInfoBtn { right: 8rem;  background: #28a745; }
+    #adminBtn       { right: 1rem;  background: #444;    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      grid-auto-rows: 1fr;
+      gap: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
+      align-content: space-around;
+      margin-bottom: 5rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 0.5rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex; flex-direction: column; justify-content: space-between;
+      cursor: pointer; height: 100%;
+    }
     .card img { flex: 1; width: 100%; object-fit: cover; border-radius: 4px; }
     .caption { margin: 0.5rem 0 1rem; text-align: center; font-weight: bold; font-size: 0.9rem; }
 
     #orderTypeGroup { display: flex; gap: 0.5rem; }
     #orderTypeGroup input[type="radio"] { display: none; }
-    #orderTypeGroup label { padding: 0.5rem 1rem; border: 1px solid #007bff; border-radius: 4px; cursor: pointer; user-select: none; transition: background 0.2s, color 0.2s; color: #007bff; }
-    #orderTypeGroup input[type="radio"]:checked + label { background: #007bff; color: #fff; border-color: #007bff; }
+    #orderTypeGroup label {
+      padding: 0.5rem 1rem;
+      border: 1px solid #007bff;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #007bff;
+      transition: background 0.2s, color 0.2s;
+    }
+    #orderTypeGroup input[type="radio"]:checked + label {
+      background: #007bff;
+      color: #fff;
+    }
 
-    #cartSummary { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #ddd; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; z-index: 999; }
-    #cartSummary .left, #cartSummary .right { display: flex; align-items: center; gap: 0.5rem; }
-    #cartSummary button { padding: 0.4rem 0.8rem; cursor: pointer; }
+    #cartSummary {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #ddd;
+      padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center;
+      z-index: 999;
+    }
 
-    .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; padding: 1rem; }
+    .modal {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; padding: 1rem;
+    }
     .modal.open { display: flex; }
-    .modal-content { background: #fff; padding: 1rem; border-radius: 8px; width: 100%; max-width: 360px; }
-    .modal-content h2 { margin-top: 0; text-align: center; }
+    .modal-content {
+      background: #fff; padding: 1rem; border-radius: 8px;
+      width: 100%; max-width: 360px;
+    }
 
-    #step1 .toppings { border-top: 1px solid #eee; margin: 0.5rem 0; max-height: 150px; overflow-y: auto; }
-    #step1 .topping-option { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-    #step1 .topping-option:last-child { border-bottom: none; }
-    #step1 .topping-option input { margin-right: 0.5rem; }
-    #step1 .quantity { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
-    #step1 .quantity button { width: 32px; height: 32px; font-size: 1.2rem; cursor: pointer; }
-    #step1 .order-summary { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
-    #step1 #totalPrice { font-weight: bold; }
-    #step1 #addToCart { background: #007bff; color: #fff; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-
-    #stepReview { display: none; }
-    #stepReview h3 { text-align: center; margin-top: 0; }
-    #stepReview p { text-align: center; font-weight: bold; margin-bottom: 0.5rem; }
-    #stepReview ul { list-style: none; padding: 0; margin: 0.5rem 0; max-height: 150px; overflow-y: auto; }
-    #stepReview button { margin: 0.25rem; padding: 0.5rem 1rem; cursor: pointer; }
-
-    #step2 { display: none; }
-    #step2 p { color: #555; font-size: 0.9rem; margin-bottom: 0.5rem; }
-    #step2 label { display: block; margin: 0.5rem 0 0.2rem; }
-    #step2 input, #step2 button { width: 100%; padding: 0.5rem; margin-bottom: 0.8rem; font-size: 1rem; }
-    #deliveryFields, #dineinField { display: none; }
-
-    #adminBtn { position: fixed; top: 1rem; right: 1rem; padding: 0.4rem 0.8rem; background: #444; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+    /* step1, stepReview, step2 등 나머지 스타일은 기존과 동일하게 붙여넣으세요 */
   </style>
 </head>
 <body>
   <h1>🍜 지혜로운 라면 🍜</h1>
-  <button id="adminBtn">📋 관리자</button>
+
+  <!-- 관리, 결제방법, 계좌번호 버튼 -->
+  <button id="accountBtn"     class="btn">🏦 계좌번호</button>
+  <button id="paymentInfoBtn" class="btn">💳 결제 방법</button>
+  <button id="adminBtn"       class="btn">📋 관리자</button>
 
   <div class="grid" id="menuGrid"></div>
 
@@ -75,21 +113,22 @@
     </div>
   </div>
 
+  <!-- 주문 모달 -->
   <div class="modal" id="orderModal">
     <div class="modal-content">
       <h2 id="modalTitle">메뉴명</h2>
-
       <div id="step1">
         <div class="toppings" id="toppingsBox"></div>
         <div class="quantity">
-          <button id="decQty">–</button><span id="qtyLabel">1</span><button id="incQty">+</button>
+          <button id="decQty">–</button>
+          <span id="qtyLabel">1</span>
+          <button id="incQty">+</button>
         </div>
         <div class="order-summary">
           <div id="totalPrice">0원</div>
           <button id="addToCart">담기</button>
         </div>
       </div>
-
       <div id="stepReview">
         <h3>주문 내역 확인</h3>
         <p>주문 유형: <span id="reviewOrderType">배달</span></p>
@@ -99,7 +138,6 @@
           <button id="confirmReview">확인</button>
         </div>
       </div>
-
       <div id="step2">
         <p id="orderHint"></p>
         <div id="dineinField">
@@ -117,22 +155,29 @@
     </div>
   </div>
 
+  <!-- 정보/계좌 모달 -->
+  <div class="modal" id="infoModal">
+    <div class="modal-content" id="infoContent"></div>
+  </div>
+
   <script>
+    /* 0) 데이터 & 전역변수 */
     const menu = [
-      { name:"기본 라면", img:"images/jiheramen.jpeg", price:3000 },
-      { name:"치즈 라면", img:"images/cheese_ramen.jpg", price:3500 },
-      { name:"떡 라면",   img:"images/tteok_ramen.jpg",   price:3500 },
-      { name:"만두 라면", img:"images/mandu_ramen.jpg",   price:4000 },
-      { name:"컵떡볶이", img:"images/tteokbbokgi.jpg",   price:2000 },
-      { name:"햇반",      img:"images/haetban.jpg",     price:1000 }
+      { name: "기본 라면", img: "images/jiheramen.jpeg", price: 3000 },
+      { name: "치즈 라면", img: "images/cheese_ramen.jpg", price: 3500 },
+      { name: "떡 라면",   img: "images/tteok_ramen.jpg",   price: 3500 },
+      { name: "만두 라면", img: "images/mandu_ramen.jpg",   price: 4000 },
+      { name: "컵떡볶이", img: "images/tteokbbokgi.jpg",   price: 2000 },
+      { name: "햇반",      img: "images/haetban.jpg",       price: 1000 }
     ];
-    const toppingsData = { 김치:0, 어묵:500, 계란:500 };
+    const toppingsData = { 김치: 0, 어묵: 500, 계란: 500 };
     let selectedDish, basePrice, qty, cart = [];
 
+    /* 1) DOM 요소 */
     const menuGrid       = document.getElementById("menuGrid"),
           orderModal     = document.getElementById("orderModal"),
           modalTitle     = document.getElementById("modalTitle"),
-          toppingsBox    = document.getElementById("toppingsBox"), 
+          toppingsBox    = document.getElementById("toppingsBox"),
           decQty         = document.getElementById("decQty"),
           incQty         = document.getElementById("incQty"),
           qtyLabel       = document.getElementById("qtyLabel"),
@@ -155,24 +200,39 @@
           checkoutBtn    = document.getElementById("checkoutBtn"),
           cartCount      = document.getElementById("cartCount"),
           cartTotal      = document.getElementById("cartTotal"),
-          adminBtn       = document.getElementById("adminBtn");
+          adminBtn       = document.getElementById("adminBtn"),
+          paymentInfoBtn = document.getElementById("paymentInfoBtn"),
+          accountBtn     = document.getElementById("accountBtn"),
+          infoModal      = document.getElementById("infoModal"),
+          infoContent    = document.getElementById("infoContent");
 
+    /* 2) 유틸 */
     function updateTotal() {
       const sumT = Array.from(toppingsBox.querySelectorAll("input:checked"))
-                        .map(cb=>toppingsData[cb.value]).reduce((a,b)=>a+b,0);
+                        .map(cb => toppingsData[cb.value])
+                        .reduce((a, b) => a + b, 0);
       totalPrice.textContent = ((basePrice + sumT) * qty).toLocaleString() + "원";
     }
     function updateCartSummary() {
-      const count = cart.reduce((s,o)=>s + o.quantity, 0);
-      const price = cart.reduce((s,o)=> {
-        const base = menu.find(m=>m.name===o.item).price;
-        const tSum = o.toppings.reduce((a,t)=>a + toppingsData[t], 0);
+      const count = cart.reduce((s, o) => s + o.quantity, 0);
+      const price = cart.reduce((s, o) => {
+        const base = menu.find(m => m.name === o.item).price;
+        const tSum = o.toppings.reduce((a, t) => a + toppingsData[t], 0);
         return s + (base + tSum) * o.quantity;
       }, 0);
       cartCount.textContent = `${count}개`;
       cartTotal.textContent = `${price.toLocaleString()}원`;
     }
+    function renderReviewList() {
+      reviewList.innerHTML = cart.map((o, i) =>
+        `<li data-idx="${i}">
+           ${o.item} x${o.quantity}${o.toppings.length ? ` (${o.toppings.join(", ")})` : ""}
+           <button class="removeItem" style="margin-left:.5rem;">❌</button>
+         </li>`
+      ).join("");
+    }
 
+    /* 3) 메뉴 카드 */
     menu.forEach((it, idx) => {
       const card = document.createElement("div");
       card.className = "card";
@@ -182,112 +242,140 @@
       menuGrid.append(card);
     });
 
+    /* 4) 메뉴 선택 */
     menuGrid.addEventListener("click", e => {
       if (e.target.tagName !== "IMG") return;
       const it = menu[+e.target.dataset.idx];
       selectedDish = it.name; basePrice = it.price; qty = 1;
       modalTitle.textContent = selectedDish;
-
       const available = (selectedDish === "컵떡볶이")
         ? ["어묵", "계란"]
-        : ["김치"];
-
+        : ["김치", "계란"];
       toppingsBox.innerHTML = available.map(n =>
         `<label class="topping-option">
            <input type="checkbox" value="${n}"> ${n}(+${toppingsData[n]}원)
          </label>`).join("");
-
-      step1.style.display="block";
-      stepReview.style.display="none";
-      step2.style.display="none";
+      step1.style.display = "block";
+      stepReview.style.display = "none";
+      step2.style.display = "none";
       qtyLabel.textContent = qty;
       updateTotal();
       orderModal.classList.add("open");
       toppingsBox.querySelectorAll("input")
-        .forEach(cb => cb.addEventListener("change", updateTotal));
+                 .forEach(cb => cb.addEventListener("change", updateTotal));
     });
 
-    decQty.onclick = ()=>{ if(qty>1)qty--; qtyLabel.textContent=qty; updateTotal(); };
-    incQty.onclick = ()=>{ qty++; qtyLabel.textContent=qty; updateTotal(); };
-
-    addToCart.onclick = ()=>{
-      const tops = Array.from(toppingsBox.querySelectorAll("input:checked"))
-                        .map(cb=>cb.value);
+    /* 5) 수량 & 담기 */
+    decQty.onclick = () => { if (qty>1) qty--; qtyLabel.textContent=qty; updateTotal(); };
+    incQty.onclick = () => { qty++; qtyLabel.textContent=qty; updateTotal(); };
+    addToCart.onclick = () => {
+      const tops = Array.from(toppingsBox.querySelectorAll("input:checked")).map(cb=>cb.value);
       cart.push({ item:selectedDish, quantity:qty, toppings:tops });
       updateCartSummary();
       orderModal.classList.remove("open");
     };
 
+    /* 6) 주문 확인(리뷰) */
     checkoutBtn.onclick = () => {
       const type = document.querySelector('input[name="orderType"]:checked').value;
-      reviewOrderType.textContent = type==="dinein"? "매장식사" : "배달";
-      step1.style.display = "none";
-      reviewList.innerHTML = cart.map(o =>
-        `<li>${o.item} x${o.quantity}${o.toppings.length?` (${o.toppings.join(', ')})`:''}</li>`
-      ).join('');
-      modalTitle.style.display = "none";
-      stepReview.style.display = "block";
-      orderModal.classList.add("open");
+      reviewOrderType.textContent = type==="dinein"? "매장식사":"배달";
+      step1.style.display="none"; modalTitle.style.display="none";
+      stepReview.style.display="block"; orderModal.classList.add("open");
+      renderReviewList();
     };
-
-    editOrder.onclick = ()=>{
-      modalTitle.style.display = "";
-      stepReview.style.display="none";
+    reviewList.addEventListener("click", e => {
+      if (e.target.classList.contains("removeItem")) {
+        const idx = +e.target.closest("li").dataset.idx;
+        cart.splice(idx,1); renderReviewList(); updateCartSummary();
+        if (!cart.length) {
+          stepReview.style.display="none";
+          modalTitle.style.display="";
+          orderModal.classList.remove("open");
+        }
+      }
+    });
+    editOrder.onclick = () => {
+      modalTitle.style.display=""; stepReview.style.display="none";
       orderModal.classList.remove("open");
     };
 
-    confirmReview.onclick = ()=>{
+    /* 7) 주문 정보 입력 */
+    confirmReview.onclick = () => {
       stepReview.style.display="none";
       const type = document.querySelector('input[name="orderType"]:checked').value;
-      if(type==="dinein"){
-        orderHint.textContent = "📝 매장식사 시 테이블 번호 또는 수령인 이름을 입력해주세요.";
+      if (type==="dinein") {
+        orderHint.textContent="📝 매장식사 시 테이블 번호 또는 수령인 이름을 입력해주세요.";
         dineinField.style.display="block";
         deliveryFields.style.display="none";
       } else {
-        orderHint.textContent = "";
+        orderHint.textContent="";
         dineinField.style.display="none";
         deliveryFields.style.display="block";
       }
       step2.style.display="block";
     };
 
-    confirmOrder.onclick = ()=>{
+    /* 8) 주문 확정 */
+    confirmOrder.onclick = () => {
       const type = document.querySelector('input[name="orderType"]:checked').value;
       let del, addr;
-      if(type==="dinein"){
-        del = addr = infoInput.value.trim();
-      } else {
-        del = delivererInput.value.trim();
-        addr = addrInput.value.trim();
-      }
-      if(!del){ alert("❗ 수령 정보를 입력해주세요."); return; }
-      if(type==="delivery"&&!addr){ alert("❗ 배달 주소를 입력해주세요."); return; }
-      cart.forEach(o=>{
-        fetch("/api/orders",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({
-            item:o.item,
-            quantity:o.quantity,
-            toppings:o.toppings,
-            deliverer:del,
-            address:addr,
-            orderType:type
-          })
-        });
-      });
+      if (type==="dinein") { del=addr=infoInput.value.trim(); }
+      else { del=delivererInput.value.trim(); addr=addrInput.value.trim(); }
+      if (!del) { alert("❗ 수령 정보를 입력해주세요."); return; }
+      if (type==="delivery"&&!addr) { alert("❗ 배달 주소를 입력해주세요."); return; }
+      cart.forEach(o=>fetch("/api/orders",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          item:o.item,
+          quantity:o.quantity,
+          toppings:o.toppings,
+          deliverer:del,
+          address:addr,
+          orderType:type
+        })
+      }));
       alert("✅ 주문이 완료되었습니다!");
       cart.length=0; updateCartSummary();
       orderModal.classList.remove("open");
     };
 
-    orderModal.addEventListener("click", e=>{
-      if(e.target===orderModal) orderModal.classList.remove("open");
+    /* 9) 결제/계좌 모달 */
+    paymentInfoBtn.onclick = () => {
+      infoContent.innerHTML=`
+        <h3 style="text-align:center;margin:0 0 .7rem;">💳 결제 방법 안내</h3>
+        <ol style="padding-left:1.2rem;line-height:1.5;">
+          <li>배달의 경우 <strong>선결제</strong>가 필요합니다.</li>
+          <li>수령인 이름은 반드시 <strong>실명</strong>으로 작성해주세요.</li>
+        </ol>
+        <button id="closeInfo" style="width:100%;padding:.5rem;margin-top:.8rem;">닫기</button>`;
+      infoModal.classList.add("open");
+      document.getElementById("closeInfo").onclick = () => infoModal.classList.remove("open");
+    };
+    accountBtn.onclick = () => {
+      infoContent.innerHTML=`
+        <h3 style="text-align:center;margin:0 0 .6rem;">🏦 계좌번호</h3>
+        <p style="font-size:1.4rem;font-weight:bold;text-align:center;margin:.2rem 0 .8rem;">1234566789</p>
+        <div style="display:flex;gap:.5rem;">
+          <button id="copyAccount" style="flex:1;padding:.5rem;">복사하기</button>
+          <button id="closeInfo" style="flex:1;padding:.5rem;">닫기</button>
+        </div>`;
+      infoModal.classList.add("open");
+      document.getElementById("copyAccount").onclick = () => {
+        navigator.clipboard.writeText("1234566789")
+          .then(()=>alert("✅ 계좌번호가 복사되었습니다!"));
+      };
+      document.getElementById("closeInfo").onclick = () => infoModal.classList.remove("open");
+    };
+    infoModal.addEventListener("click", e => {
+      if (e.target===infoModal) infoModal.classList.remove("open");
     });
 
-    adminBtn.onclick = () => {
-      window.location.href = "/admin";
-    };
+    /* 10) 그 외 */
+    orderModal.addEventListener("click", e => {
+      if (e.target===orderModal) orderModal.classList.remove("open");
+    });
+    adminBtn.onclick = () => { window.location.href="/admin"; };
   </script>
 </body>
 </html>

@@ -9,7 +9,7 @@ from flask_cors import CORS
 # ─── 앱 설정 ───────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "orders.db")
-SECRET_PASSWORD = "070112"
+SECRET_PASSWORD = "55983200"
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
