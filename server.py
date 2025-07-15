@@ -17,8 +17,7 @@ from sqlalchemy.orm import sessionmaker
 BASE_DIR        = os.path.abspath(os.path.dirname(__file__))
 SECRET_PASSWORD = "55983200"
 
-# MariaDB 연결 정보 (하드코딩)
-# 내부 네트워크 호스트를 'db', 포트를 3306으로 가정합니다.
+# MariaDB 연결 정보 (하드코딩, pymysql 드라이버 사용)
 DATABASE_URL = (
     "mysql+pymysql://root:dghs2018!@"
     "svc.sel5.cloudtype.app:31392/ramen_orders"
@@ -26,7 +25,7 @@ DATABASE_URL = (
 )
 
 # ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
-# echo=True로 SQL 로그를 확인할 수 있습니다
+# echo=True로 SQL 로그를 콘솔에서 확인할 수 있습니다
 engine       = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 Base         = declarative_base()
@@ -39,7 +38,7 @@ class Order(Base):
     timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)            # "김치,계란"
+    toppings   = Column(Text)            # "김치,계란" 형태로 저장
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
