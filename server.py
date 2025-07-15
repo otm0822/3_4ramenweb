@@ -1,4 +1,3 @@
-# server.py
 import os
 from datetime import datetime
 from functools import wraps
@@ -13,150 +12,124 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# ─── 데이터베이스 설정 (코드 내에 직접 입력) ─────────────────────
+# ─── DB 접속 정보 (하드코딩) ───────────────────────────────────
 DB_HOST     = "svc.sel5.cloudtype.app"
 DB_PORT     = 31392
 DB_USER     = "root"
 DB_PASSWORD = "dghs2018!@"
 DB_NAME     = "ramen_orders"
 
-# SQLAlchemy 연결 문자열
+# SQLAlchemy + mysql-connector-python
 DATABASE_URL = (
-    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
+    f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}"
     f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    "?charset=utf8mb4"
+    "?charset=utf8mb4&connection_timeout=10"
 )
 
-# ─── SQLAlchemy 엔진 · 세션 · 베이스 생성 ────────────────────────
-# echo=True 로 SQL 로그를 콘솔에서 확인할 수 있습니다
-engine       = create_engine(DATABASE_URL, echo=True)
+# ─── SQLAlchemy 기본 세팅 ─────────────────────────────────────
+engine       = create_engine(
+    DATABASE_URL,
+    echo=True,                 # SQL 로그 보기
+    pool_pre_ping=True         # 연결 끊김 자동 재시도
+)
 SessionLocal = sessionmaker(bind=engine)
 Base         = declarative_base()
 
-# ─── ORM 모델 정의 ─────────────────────────────────────────────
+# ─── Order 모델 ──────────────────────────────────────────────
 class Order(Base):
     __tablename__ = "orders"
-
     id         = Column(Integer, primary_key=True, index=True)
-    timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
+    timestamp  = Column(DateTime, default=datetime.utcnow, nullable=False)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)            # 예: "김치,계란"
+    toppings   = Column(Text)          # "김치,계란"
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
-    order_type = Column(Enum('delivery','dinein', name="order_types"),
-                        nullable=False, default='delivery')
+    order_type = Column(Enum("delivery", "dinein", name="order_types"),
+                        default="delivery", nullable=False)
 
 # 테이블이 없으면 생성
 Base.metadata.create_all(bind=engine)
 
 # 연결 테스트
 try:
-    conn = engine.connect()
+    with engine.connect() as conn:
+        conn.execute("SELECT 1")
     print("✅ DB 연결 성공:", DATABASE_URL)
-    conn.close()
 except Exception as e:
     print("❌ DB 연결 실패:", e)
 
-# ─── Flask 앱 설정 ───────────────────────────────────────────
+# ─── Flask 앱 ────────────────────────────────────────────────
 app = Flask(__name__, static_folder=os.path.abspath(os.path.dirname(__file__)), static_url_path="")
 CORS(app)
 
 SECRET_PASSWORD = "55983200"
 
-# ─── HTTP Basic Auth 헬퍼 ────────────────────────────────────
-def check_auth(password):
-    return password == SECRET_PASSWORD
-
+def check_auth(password): return password == SECRET_PASSWORD
 def authenticate():
-    return Response(
-        '로그인이 필요합니다.', 401,
-        {'WWW-Authenticate': 'Basic realm="Login Required"'}
-    )
-
+    return Response('로그인이 필요합니다.', 401,
+                    {'WWW-Authenticate': 'Basic realm="Login Required"'})
 def requires_auth(f):
     @wraps(f)
-    def decorated(*args, **kwargs):
+    def decorated(*a, **kw):
         auth = request.authorization
         if not auth or not check_auth(auth.password):
             return authenticate()
-        return f(*args, **kwargs)
+        return f(*a, **kw)
     return decorated
 
-# ─── 정적 파일 서빙 ───────────────────────────────────────────
+# ─── 정적 파일 ──────────────────────────────────────────────
 @app.route("/")
-def serve_index():
-    return send_from_directory(app.static_folder, "index.html")
-
+def index():  return send_from_directory(app.static_folder, "index.html")
 @app.route("/admin")
 @requires_auth
-def serve_admin():
-    return send_from_directory(app.static_folder, "admin.html")
+def admin():  return send_from_directory(app.static_folder, "admin.html")
 
-# ─── 주문 조회 ───────────────────────────────────────────────
+# ─── API ────────────────────────────────────────────────────
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
     db = SessionLocal()
-    orders = db.query(Order).order_by(Order.id.desc()).all()
-    result = []
-    for o in orders:
-        result.append({
-            "id":        o.id,
-            "timestamp": o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-            "item":      o.item,
-            "quantity":  o.quantity,
-            "toppings":  o.toppings.split(",") if o.toppings else [],
-            "deliverer": o.deliverer,
-            "address":   o.address,
-            "completed": o.completed,
-            "orderType": o.order_type
-        })
+    rows = db.query(Order).order_by(Order.id.desc()).all()
+    result = [{
+        "id": o.id, "timestamp": o.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        "item": o.item, "quantity": o.quantity,
+        "toppings": o.toppings.split(",") if o.toppings else [],
+        "deliverer": o.deliverer, "address": o.address,
+        "completed": o.completed, "orderType": o.order_type
+    } for o in rows]
     db.close()
-    return jsonify(result), 200
+    return jsonify(result)
 
-# ─── 주문 등록 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["POST"])
 def create_order():
     data = request.get_json()
     db = SessionLocal()
-    toppings_csv = ",".join(data.get("toppings", []))
-    new_order = Order(
-        timestamp  = datetime.now(),
-        item       = data["item"],
-        quantity   = data["quantity"],
-        toppings   = toppings_csv,
-        deliverer  = data.get("deliverer", ""),
-        address    = data.get("address", ""),
-        order_type = data.get("orderType", "delivery")
+    order = Order(
+        item=data["item"],
+        quantity=data["quantity"],
+        toppings=",".join(data.get("toppings", [])),
+        deliverer=data.get("deliverer", ""),
+        address=data.get("address", ""),
+        order_type=data.get("orderType", "delivery")
     )
-    db.add(new_order)
-    db.commit()
-    db.close()
+    db.add(order); db.commit(); db.close()
     return jsonify(status="ok"), 201
 
-# ─── 주문 완료 처리 ───────────────────────────────────────────
-@app.route("/api/orders/<int:order_id>/complete", methods=["POST"])
-def complete_order(order_id):
+@app.route("/api/orders/<int:oid>/complete", methods=["POST"])
+def complete_order(oid):
     db = SessionLocal()
-    o = db.query(Order).get(order_id)
-    if o:
-        o.completed = True
-        db.commit()
-    db.close()
-    return jsonify(status="ok"), 200
+    o = db.query(Order).get(oid)
+    if o: o.completed = True; db.commit()
+    db.close(); return jsonify(status="ok")
 
-# ─── 주문 완료 취소 ───────────────────────────────────────────
-@app.route("/api/orders/<int:order_id>/uncomplete", methods=["POST"])
-def uncomplete_order(order_id):
+@app.route("/api/orders/<int:oid>/uncomplete", methods=["POST"])
+def uncomplete_order(oid):
     db = SessionLocal()
-    o = db.query(Order).get(order_id)
-    if o:
-        o.completed = False
-        db.commit()
-    db.close()
-    return jsonify(status="ok"), 200
+    o = db.query(Order).get(oid)
+    if o: o.completed = False; db.commit()
+    db.close(); return jsonify(status="ok")
 
-# ─── 서버 실행 ───────────────────────────────────────────────
+# ─── 실행 ───────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
