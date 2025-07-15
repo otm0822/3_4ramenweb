@@ -10,15 +10,11 @@
   <style>
     body { font-family: sans-serif; padding: 1rem; }
     h1 { text-align: center; margin-bottom: 1rem; }
-
-    /* 반반 레이아웃 */
     .half { width: 48%; }
     .half + .half { margin-left: 4%; }
     .d-flex-wrap { display: flex; flex-wrap: wrap; margin-bottom: 1rem; }
-
     table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
     th, td { border: 1px solid #aaa; padding: 0.4rem; text-align: center; }
-
     .btn-back { margin-top: 1rem; }
   </style>
 </head>
@@ -80,18 +76,34 @@
       </div>
     </div>
 
-    <!-- 2) 주문 완료 -->
+    <!-- 2) 주문 완료 (매장/배달 분리) -->
     <div class="tab-pane fade" id="completed" role="tabpanel">
-      <h4>완료된 주문</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>시간</th><th>메뉴</th><th>수량</th>
-            <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>취소</th>
-          </tr>
-        </thead>
-        <tbody id="completedBody"></tbody>
-      </table>
+      <div class="d-flex-wrap">
+        <div class="half">
+          <h4>매장주문 (완료)</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>취소</th>
+              </tr>
+            </thead>
+            <tbody id="completedDinein"></tbody>
+          </table>
+        </div>
+        <div class="half">
+          <h4>배달주문 (완료)</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>시간</th><th>메뉴</th><th>수량</th>
+                <th>토핑</th><th>수령인</th><th>주소</th><th>취소</th>
+              </tr>
+            </thead>
+            <tbody id="completedDelivery"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- 3) 매출 분석 (떡볶이 제외) -->
@@ -152,152 +164,94 @@
     const toppingPrices = { 계란:700, 파:700, 김치:700 };
     const tteokItems = ["떡 라면","컵떡볶이"];
 
+    function rowHTML(o, btnTxt, isCancel=false) {
+      return `<tr>
+        <td>${o.timestamp}</td>
+        <td>${o.item}</td>
+        <td>${o.quantity}</td>
+        <td>${o.toppings.join(',')}</td>
+        <td>${o.deliverer}</td>
+        <td>${o.address}</td>
+        <td>
+          <button class="btn btn-sm ${isCancel?'btn-warning':'btn-success'}"
+                  onclick="${isCancel?'cancelComplete':'completeOrder'}(${o.id})">
+            ${btnTxt}
+          </button>
+        </td>
+      </tr>`;
+    }
+
     async function loadAdmin() {
-      const res = await fetch('/api/orders');
-      const orders = await res.json();
+      const orders = await (await fetch('/api/orders')).json();
 
-      // 1) 일반 주문 (떡볶이 제외)
-      const pendingI = orders.filter(o =>
-        !o.completed &&
-        o.orderType==='dinein' &&
-        !tteokItems.includes(o.item)
-      );
-      const pendingD = orders.filter(o =>
-        !o.completed &&
-        o.orderType==='delivery' &&
-        !tteokItems.includes(o.item)
-      );
-      const completedAll = orders.filter(o =>
-        o.completed &&
-        !tteokItems.includes(o.item)
-      );
+      // 대기 주문
+      const pendingDinein    = orders.filter(o=>!o.completed && o.orderType==='dinein'   && !tteokItems.includes(o.item));
+      const pendingDelivery  = orders.filter(o=>!o.completed && o.orderType==='delivery' && !tteokItems.includes(o.item));
+      // 완료 주문
+      const completedDinein  = orders.filter(o=> o.completed && o.orderType==='dinein'   && !tteokItems.includes(o.item));
+      const completedDelivery= orders.filter(o=> o.completed && o.orderType==='delivery' && !tteokItems.includes(o.item));
+      // 떡볶이
+      const pendingTteok     = orders.filter(o=>!o.completed && tteokItems.includes(o.item));
+      const completedTteok   = orders.filter(o=> o.completed && tteokItems.includes(o.item));
 
-      // 2) 떡볶이 전용
-      const pendingT = orders.filter(o =>
-        !o.completed && tteokItems.includes(o.item)
-      );
-      const completedT = orders.filter(o =>
-        o.completed && tteokItems.includes(o.item)
-      );
+      // 렌더
+      document.getElementById('pendingDinein').innerHTML    = pendingDinein   .map(o=>rowHTML(o,'완료'   )).join('');
+      document.getElementById('pendingDelivery').innerHTML  = pendingDelivery .map(o=>rowHTML(o,'완료'   )).join('');
+      document.getElementById('completedDinein').innerHTML  = completedDinein .map(o=>rowHTML(o,'취소',true)).join('');
+      document.getElementById('completedDelivery').innerHTML= completedDelivery.map(o=>rowHTML(o,'취소',true)).join('');
+      document.getElementById('pendingTteok').innerHTML     = pendingTteok    .map(o=>rowHTML(o,'완료'   )).join('');
+      document.getElementById('completedTteok').innerHTML   = completedTteok  .map(o=>rowHTML(o,'취소',true)).join('');
 
-      // 렌더: 현재 주문
-      document.getElementById('pendingDinein').innerHTML = pendingI.map(o => `
-        <tr>
-          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
-          <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="completeOrder(${o.id})">
-              완료
-            </button>
-          </td>
-        </tr>
-      `).join('');
-      document.getElementById('pendingDelivery').innerHTML = pendingD.map(o => `
-        <tr>
-          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
-          <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="completeOrder(${o.id})">
-              완료
-            </button>
-          </td>
-        </tr>
-      `).join('');
-
-      // 렌더: 완료 주문
-      document.getElementById('completedBody').innerHTML = completedAll.map(o => `
-        <tr>
-          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
-          <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning"
-                    onclick="cancelComplete(${o.id})">
-              취소
-            </button>
-          </td>
-        </tr>
-      `).join('');
-
-      // 렌더: 떡볶이 대기
-      document.getElementById('pendingTteok').innerHTML = pendingT.map(o => `
-        <tr>
-          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
-          <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="completeOrder(${o.id})">
-              완료
-            </button>
-          </td>
-        </tr>
-      `).join('');
-
-      // 렌더: 떡볶이 완료 (취소 버튼 포함)
-      document.getElementById('completedTteok').innerHTML = completedT.map(o => `
-        <tr>
-          <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
-          <td>${o.toppings.join(',')}</td>
-          <td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning"
-                    onclick="cancelComplete(${o.id})">
-              취소
-            </button>
-          </td>
-        </tr>
-      `).join('');
-
-      // 매출 분석 (떡볶이 제외)
-      const salesByItem = {}, salesByInterval = {};
-      completedAll.forEach(o => {
+      // 매출 분석
+      const salesByItem     = {}, salesByInterval = {};
+      completedDinein.concat(completedDelivery).forEach(o=>{
         const base = menuPrices[o.item]||0;
         const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
         const sale = (base+tSum)*o.quantity;
-        salesByItem[o.item] = (salesByItem[o.item]||0) + sale;
-        const dt = new Date(o.timestamp);
+        salesByItem[o.item] = (salesByItem[o.item]||0)+sale;
+        const dt=new Date(o.timestamp);
         dt.setMinutes(Math.floor(dt.getMinutes()/30)*30,0,0);
-        const label = dt.toISOString().slice(11,16);
-        salesByInterval[label] = (salesByInterval[label]||0) + sale;
+        const label=dt.toISOString().slice(11,16);
+        salesByInterval[label] = (salesByInterval[label]||0)+sale;
       });
-      const totalSales = Object.values(salesByItem).reduce((a,b)=>a+b,0);
       document.getElementById('salesSummary').textContent =
-        `총 매출: ${totalSales.toLocaleString()}원`;
+        `총 매출: ${Object.values(salesByItem).reduce((a,b)=>a+b,0).toLocaleString()}원`;
 
       // 떡볶이 매출
-      const tteokSales = completedT.reduce((sum,o) => {
-        const base = menuPrices[o.item]||0;
-        const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
-        return sum + (base+tSum)*o.quantity;
-      }, 0);
-      document.getElementById('tteokSales').textContent =
-        `${tteokSales.toLocaleString()}원`;
+      const tteokSales = completedTteok.reduce((s,o)=>{
+        const base=menuPrices[o.item]||0;
+        const tSum=o.toppings.reduce((a,t)=>a+(toppingPrices[t]||0),0);
+        return s+(base+tSum)*o.quantity;
+      },0);
+      document.getElementById('tteokSales').textContent = `${tteokSales.toLocaleString()}원`;
 
-      // 차트
-      new Chart(document.getElementById('byItemChart'), {
-        type:'bar',
-        data:{ labels:Object.keys(salesByItem), datasets:[{ label:'품목별 매출', data:Object.values(salesByItem) }] }
-      });
-      new Chart(document.getElementById('byIntervalChart'), {
-        type:'line',
-        data:{ labels:Object.keys(salesByInterval), datasets:[{ label:'30분 단위 매출', data:Object.values(salesByInterval) }] }
-      });
+      // 차트 그리기
+      redrawChart('byItemChart','bar','품목별 매출',salesByItem);
+      redrawChart('byIntervalChart','line','30분 단위 매출',salesByInterval);
+    }
+
+    let chartCache = {};
+    function redrawChart(elId,type,label,dataObj){
+      if(chartCache[elId]) chartCache[elId].destroy();
+      chartCache[elId] = new Chart(
+        document.getElementById(elId),
+        { type, data:{ labels:Object.keys(dataObj),
+                       datasets:[{ label, data:Object.values(dataObj) }]
+                     }
+        }
+      );
     }
 
     async function completeOrder(id){
-      await fetch(`/api/orders/${id}/complete`,{ method:'POST' });
+      await fetch(`/api/orders/${id}/complete`,{method:'POST'});
       loadAdmin();
     }
     async function cancelComplete(id){
-      await fetch(`/api/orders/${id}/uncomplete`,{ method:'POST' });
+      await fetch(`/api/orders/${id}/uncomplete`,{method:'POST'});
       loadAdmin();
     }
 
+    // 초기 로드 & 주기 리프레시
     loadAdmin();
     setInterval(loadAdmin,5000);
   </script>
