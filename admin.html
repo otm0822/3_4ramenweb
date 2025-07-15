@@ -123,7 +123,7 @@
             <thead>
               <tr>
                 <th>시간</th><th>메뉴</th><th>수량</th>
-                <th>토핑</th><th>수령인</th><th>주소/테이블</th>
+                <th>토핑</th><th>수령인</th><th>주소/테이블</th><th>취소</th>
               </tr>
             </thead>
             <tbody id="completedTteok"></tbody>
@@ -156,7 +156,7 @@
       const res = await fetch('/api/orders');
       const orders = await res.json();
 
-      // 일반 주문 (떡볶이 제외)
+      // 1) 일반 주문 (떡볶이 제외)
       const pendingI = orders.filter(o =>
         !o.completed &&
         o.orderType==='dinein' &&
@@ -172,7 +172,7 @@
         !tteokItems.includes(o.item)
       );
 
-      // 떡볶이 전용
+      // 2) 떡볶이 전용
       const pendingT = orders.filter(o =>
         !o.completed && tteokItems.includes(o.item)
       );
@@ -180,7 +180,7 @@
         o.completed && tteokItems.includes(o.item)
       );
 
-      // 렌더링: 현재 주문
+      // 렌더: 현재 주문
       document.getElementById('pendingDinein').innerHTML = pendingI.map(o => `
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
@@ -208,7 +208,7 @@
         </tr>
       `).join('');
 
-      // 렌더링: 완료 주문
+      // 렌더: 완료 주문
       document.getElementById('completedBody').innerHTML = completedAll.map(o => `
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
@@ -223,7 +223,7 @@
         </tr>
       `).join('');
 
-      // 렌더링: 떡볶이 전용
+      // 렌더: 떡볶이 대기
       document.getElementById('pendingTteok').innerHTML = pendingT.map(o => `
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
@@ -237,18 +237,25 @@
           </td>
         </tr>
       `).join('');
+
+      // 렌더: 떡볶이 완료 (취소 버튼 포함)
       document.getElementById('completedTteok').innerHTML = completedT.map(o => `
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td>
           <td>${o.deliverer}</td><td>${o.address}</td>
+          <td>
+            <button class="btn btn-sm btn-warning"
+                    onclick="cancelComplete(${o.id})">
+              취소
+            </button>
+          </td>
         </tr>
       `).join('');
 
       // 매출 분석 (떡볶이 제외)
-      const nonTteok = completedAll;
       const salesByItem = {}, salesByInterval = {};
-      nonTteok.forEach(o => {
+      completedAll.forEach(o => {
         const base = menuPrices[o.item]||0;
         const tSum = o.toppings.reduce((s,t)=>s+(toppingPrices[t]||0),0);
         const sale = (base+tSum)*o.quantity;
