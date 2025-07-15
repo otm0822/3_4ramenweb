@@ -7,16 +7,17 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 
 from sqlalchemy import (
-    create_engine, Column, Integer, String, Boolean, Text, DateTime, Enum
+    create_engine, Column, Integer, String,
+    Boolean, Text, DateTime, Enum
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # ─── 설정 ─────────────────────────────────────────────────────
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+BASE_DIR       = os.path.abspath(os.path.dirname(__file__))
 SECRET_PASSWORD = "55983200"
 
-# MariaDB (root 계정) 연결 정보
+# MariaDB(root) 연결 정보 (하드코딩)
 DATABASE_URL = (
     "mysql+pymysql://root:dghs2018!@"
     "svc.sel5.cloudtype.app:31392/ramen_orders"
@@ -24,9 +25,9 @@ DATABASE_URL = (
 )
 
 # ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
-engine = create_engine(DATABASE_URL, echo=False)
+engine       = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(bind=engine)
-Base = declarative_base()
+Base         = declarative_base()
 
 # ─── ORM 모델 정의 ─────────────────────────────────────────────
 class Order(Base):
@@ -36,14 +37,14 @@ class Order(Base):
     timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)                           # "김치,계란" 형태
+    toppings   = Column(Text)                           # "김치,계란"
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
     order_type = Column(Enum('delivery','dinein', name="order_types"),
                         nullable=False, default='delivery')
 
-# 테이블 생성 (없으면)
+# ─── 테이블 생성 ───────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
 
 # ─── Flask 앱 설정 ───────────────────────────────────────────
@@ -144,5 +145,4 @@ def uncomplete_order(order_id):
 
 # ─── 서버 실행 ───────────────────────────────────────────────
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
