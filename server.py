@@ -17,15 +17,17 @@ from sqlalchemy.orm import sessionmaker
 BASE_DIR        = os.path.abspath(os.path.dirname(__file__))
 SECRET_PASSWORD = "55983200"
 
-# MariaDB 연결 정보 (mariadbconnector 드라이버 사용)
-# pip install sqlalchemy mariadb
+# MariaDB 연결 정보 (root 계정, 하드코딩)
+# pip install sqlalchemy pymysql
 DATABASE_URL = (
-    "mariadb+mariadbconnector://root:dghs2018!@"
+    "mysql+pymysql://root:dghs2018!@"
     "svc.sel5.cloudtype.app:31392/ramen_orders"
+    "?charset=utf8mb4"
 )
 
 # ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
-engine       = create_engine(DATABASE_URL, echo=False)
+# echo=True 로 SQL 로그를 찍습니다
+engine       = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 Base         = declarative_base()
 
@@ -44,8 +46,15 @@ class Order(Base):
     order_type = Column(Enum('delivery','dinein', name="order_types"),
                         nullable=False, default='delivery')
 
-# 테이블 생성 (없으면)
+# ─── 테이블 생성 및 연결 테스트 ─────────────────────────────────
 Base.metadata.create_all(bind=engine)
+
+try:
+    conn = engine.connect()
+    print("✅ DB 연결 성공:", DATABASE_URL)
+    conn.close()
+except Exception as e:
+    print("❌ DB 연결 실패:", e)
 
 # ─── Flask 앱 설정 ───────────────────────────────────────────
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
