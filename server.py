@@ -13,19 +13,22 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# ─── 설정 ─────────────────────────────────────────────────────
-BASE_DIR        = os.path.abspath(os.path.dirname(__file__))
-SECRET_PASSWORD = "55983200"
+# ─── 데이터베이스 설정 (코드 내에 직접 입력) ─────────────────────
+DB_HOST     = "svc.sel5.cloudtype.app"
+DB_PORT     = 31392
+DB_USER     = "root"
+DB_PASSWORD = "dghs2018!@"
+DB_NAME     = "ramen_orders"
 
-# MariaDB 연결 정보 (하드코딩, pymysql 드라이버 사용)
+# SQLAlchemy 연결 문자열
 DATABASE_URL = (
-    "mysql+pymysql://root:dghs2018!@"
-    "svc.sel5.cloudtype.app:31392/ramen_orders"
+    f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     "?charset=utf8mb4"
 )
 
-# ─── SQLAlchemy 엔진 · 세션 생성 ────────────────────────────────
-# echo=True로 SQL 로그를 콘솔에서 확인할 수 있습니다
+# ─── SQLAlchemy 엔진 · 세션 · 베이스 생성 ────────────────────────
+# echo=True 로 SQL 로그를 콘솔에서 확인할 수 있습니다
 engine       = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(bind=engine)
 Base         = declarative_base()
@@ -38,16 +41,17 @@ class Order(Base):
     timestamp  = Column(DateTime, nullable=False, default=datetime.utcnow)
     item       = Column(String(100), nullable=False)
     quantity   = Column(Integer, nullable=False)
-    toppings   = Column(Text)            # "김치,계란" 형태로 저장
+    toppings   = Column(Text)            # 예: "김치,계란"
     deliverer  = Column(String(100))
     address    = Column(Text)
     completed  = Column(Boolean, default=False, nullable=False)
     order_type = Column(Enum('delivery','dinein', name="order_types"),
                         nullable=False, default='delivery')
 
-# ─── 테이블 생성 및 연결 테스트 ─────────────────────────────────
+# 테이블이 없으면 생성
 Base.metadata.create_all(bind=engine)
 
+# 연결 테스트
 try:
     conn = engine.connect()
     print("✅ DB 연결 성공:", DATABASE_URL)
@@ -56,8 +60,10 @@ except Exception as e:
     print("❌ DB 연결 실패:", e)
 
 # ─── Flask 앱 설정 ───────────────────────────────────────────
-app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
+app = Flask(__name__, static_folder=os.path.abspath(os.path.dirname(__file__)), static_url_path="")
 CORS(app)
+
+SECRET_PASSWORD = "55983200"
 
 # ─── HTTP Basic Auth 헬퍼 ────────────────────────────────────
 def check_auth(password):
@@ -81,12 +87,12 @@ def requires_auth(f):
 # ─── 정적 파일 서빙 ───────────────────────────────────────────
 @app.route("/")
 def serve_index():
-    return send_from_directory(BASE_DIR, "index.html")
+    return send_from_directory(app.static_folder, "index.html")
 
 @app.route("/admin")
 @requires_auth
 def serve_admin():
-    return send_from_directory(BASE_DIR, "admin.html")
+    return send_from_directory(app.static_folder, "admin.html")
 
 # ─── 주문 조회 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["GET"])
@@ -153,4 +159,4 @@ def uncomplete_order(order_id):
 
 # ─── 서버 실행 ───────────────────────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=5000)
