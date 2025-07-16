@@ -390,7 +390,7 @@
       infoContent.innerHTML = `
         <h3 style="text-align:center;margin:0 0 .6rem;">🏦 계좌번호</h3>
         <p style="font-size:1.4rem;font-weight:bold;text-align:center;margin:.2rem 0 .8rem;">
-          1234566789
+          토스뱅크 1908-9481-7054
         </p>
         <div style="display:flex;gap:.5rem;">
           <button id="copyAccount" style="flex:1;padding:.5rem;">복사하기</button>
@@ -398,7 +398,7 @@
         </div>`;
       infoModal.classList.add("open");
       document.getElementById("copyAccount").onclick = () => {
-        navigator.clipboard.writeText("1234566789").then(()=>alert("✅ 계좌번호가 복사되었습니다!"));
+        navigator.clipboard.writeText("토스뱅크 1908-9481-7054").then(()=>alert("✅ 계좌번호가 복사되었습니다!"));
       };
       document.getElementById("closeInfo").onclick = () => infoModal.classList.remove("open");
     };

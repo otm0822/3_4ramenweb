@@ -6,15 +6,15 @@ from functools import wraps
 from flask import Flask, request, jsonify, send_from_directory, Response
 from flask_cors import CORS
 
-# ─── 앱 설정 ───────────────────────────────────────────────
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "orders.db")
+# ─── 설정 ─────────────────────────────────────────────────────
+BASE_DIR        = os.path.abspath(os.path.dirname(__file__))
+DB_PATH         = os.path.join(BASE_DIR, "orders.db")
 SECRET_PASSWORD = "55983200"
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
 
-# ─── HTTP Basic Auth 헬퍼 ───────────────────────────────────
+# ─── HTTP Basic Auth 헬퍼 ────────────────────────────────────
 def check_auth(password):
     return password == SECRET_PASSWORD
 
@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS orders (
     deliverer   TEXT,
     address     TEXT,
     completed   INTEGER DEFAULT 0,
-    order_type  TEXT
+    order_type  TEXT,
+    cooking     INTEGER DEFAULT 0    -- 0:대기, 1:조리중
 )
 """)
 conn.commit()
@@ -65,7 +66,7 @@ def serve_admin():
 @app.route("/api/orders", methods=["GET"])
 def list_orders():
     c.execute("""
-      SELECT id, timestamp, item, quantity, toppings, deliverer, address, completed, order_type
+      SELECT id, timestamp, item, quantity, toppings, deliverer, address, completed, order_type, cooking
       FROM orders ORDER BY id DESC
     """)
     rows = c.fetchall()
@@ -80,7 +81,8 @@ def list_orders():
             "deliverer":  r[5],
             "address":    r[6],
             "completed":  bool(r[7]),
-            "orderType":  r[8]
+            "orderType":  r[8],
+            "cooking":    bool(r[9])
         })
     return jsonify(orders), 200
 
@@ -89,23 +91,30 @@ def list_orders():
 def create_order():
     data = request.get_json()
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    toppings = ",".join(data.get("toppings", []))
+    toppings  = ",".join(data.get("toppings", []))
     order_type = data.get("orderType", "delivery")
     c.execute("""
       INSERT INTO orders
         (timestamp, item, quantity, toppings, deliverer, address, order_type)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
-      ts,
-      data["item"],
-      data["quantity"],
-      toppings,
-      data["deliverer"],
-      data["address"],
-      order_type
+        ts,
+        data["item"],
+        data["quantity"],
+        toppings,
+        data.get("deliverer",""),
+        data.get("address",""),
+        order_type
     ))
     conn.commit()
     return jsonify(status="ok"), 201
+
+# ─── 조리 시작 처리 ───────────────────────────────────────────
+@app.route("/api/orders/<int:order_id>/start_cooking", methods=["POST"])
+def start_cooking(order_id):
+    c.execute("UPDATE orders SET cooking = 1 WHERE id = ?", (order_id,))
+    conn.commit()
+    return jsonify(status="ok"), 200
 
 # ─── 주문 완료 처리 ───────────────────────────────────────────
 @app.route("/api/orders/<int:order_id>/complete", methods=["POST"])
