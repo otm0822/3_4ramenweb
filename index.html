@@ -364,8 +364,39 @@
     };
 
     /* 모달/정보창 토글 */
-    paymentInfoBtn.onclick = ()=>{ /* … 기존 결제 안내 … */ };
-    accountBtn.onclick = ()=>{ /* … 기존 계좌 복사 … */ };
+  
+  paymentInfoBtn.onclick = () => {
+    infoContent.innerHTML = `
+      <h3 style="text-align:center;margin:0 0 .7rem;">💳 결제 방법 안내</h3>
+      <ol style="padding-left:1.2rem;line-height:1.5;">
+        <li>배달의 경우 <strong>선결제</strong>가 필요합니다.</li>
+        <li>수령인 이름은 반드시 <strong>실명</strong>으로 작성해주세요.</li>
+      </ol>
+      <button id="closeInfo" style="width:100%;padding:.5rem;margin-top:.8rem;">닫기</button>`;
+    infoModal.classList.add("open");
+    document.getElementById("closeInfo").onclick = () =>
+      infoModal.classList.remove("open");
+  };
+
+  accountBtn.onclick = () => {
+    infoContent.innerHTML = `
+      <h3 style="text-align:center;margin:0 0 .6rem;">🏦 계좌번호</h3>
+      <p style="font-size:1.4rem;font-weight:bold;text-align:center;margin:.2rem 0 .8rem;">
+        토스뱅크 1908-9481-7054
+      </p>
+      <div style="display:flex;gap:.5rem;">
+        <button id="copyAccount" style="flex:1;padding:.5rem;">복사하기</button>
+        <button id="closeInfo" style="flex:1;padding:.5rem;">닫기</button>
+      </div>`;
+      infoModal.classList.add("open");
+      document.getElementById("copyAccount").onclick = () =>
+        navigator.clipboard.writeText("토스뱅크 1908-9481-7054").then(() =>
+          alert("✅ 계좌번호가 복사되었습니다!")
+        );
+      document.getElementById("closeInfo").onclick = () =>
+        infoModal.classList.remove("open");
+    };
+
     infoModal.addEventListener("click", e=>{ if(e.target===infoModal) infoModal.classList.remove("open"); });
     orderModal.addEventListener("click", e=>{ if(e.target===orderModal) orderModal.classList.remove("open"); });
     adminBtn.onclick = ()=>{ window.location.href="/admin"; };
