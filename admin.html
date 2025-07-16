@@ -1,8 +1,9 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>📋 주문 관리</title>
   <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
@@ -16,10 +17,20 @@
     table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
     th, td { border: 1px solid #aaa; padding: 0.4rem; text-align: center; }
     .btn-back { margin-top: 1rem; }
+
+    /* 주문 중단 버튼 스타일 */
+    #pauseToggle {
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
   <h1>📋 주문 관리</h1>
+
+  <!-- 주문 중단/재개 토글 -->
+  <button id="pauseToggle" class="btn btn-warning">
+    주문 중단
+  </button>
 
   <!-- Nav tabs -->
   <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
@@ -159,105 +170,103 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const menuPrices   = { "기본 라면":4000, "치즈 라면":4500, "떡 라면":4500,
-                           "만두 라면":4500, "랜덤 라면":4300, "햇반":1500,
-                           "컵떡볶이":2000 };
-    const toppingPrices= { 계란:700, 파:700, 김치:700 };
-    const tteokItems    = ["떡 라면","컵떡볶이"];
+    const menuPrices    = { "기본 라면":4000, "치즈 라면":4500, "떡 라면":4500,
+                             "만두 라면":4500, "랜덤 라면":4300, "햇반":1500,
+                             "컵떡볶이":2000 };
+    const toppingPrices = { 계란:700, 파:700, 김치:700 };
+    const tteokItems     = ["컵떡볶이"];
+
+    const toggleBtn = document.getElementById("pauseToggle");
+
+    // 주문 중단 토글
+    toggleBtn.onclick = async () => {
+      const res = await fetch("/api/orders/toggle_pause", { method: "POST" });
+      const { paused } = await res.json();
+      toggleBtn.textContent = paused ? "주문 재개" : "주문 중단";
+    };
+
+    // 초기: 현재 중단 상태 반영
+    (async function(){
+      const res = await fetch("/api/orders/status");
+      const { paused } = await res.json();
+      toggleBtn.textContent = paused ? "주문 재개" : "주문 중단";
+    })();
 
     async function loadAdmin(){
       const orders = await (await fetch('/api/orders')).json();
 
-      // 1) 일반 주문 (떡볶이 제외)
       const pendingI = orders.filter(o=>!o.completed&&o.orderType==='dinein'   &&!tteokItems.includes(o.item));
       const pendingD = orders.filter(o=>!o.completed&&o.orderType==='delivery'&&!tteokItems.includes(o.item));
       const compI    = orders.filter(o=> o.completed&&o.orderType==='dinein'   &&!tteokItems.includes(o.item));
       const compD    = orders.filter(o=> o.completed&&o.orderType==='delivery'&&!tteokItems.includes(o.item));
-      // 2) 떡볶이 전용
-      const pendT   = orders.filter(o=>!o.completed&&tteokItems.includes(o.item));
-      const compT   = orders.filter(o=> o.completed&&tteokItems.includes(o.item));
+      const pendT    = orders.filter(o=>!o.completed&&tteokItems.includes(o.item));
+      const compT    = orders.filter(o=> o.completed&&tteokItems.includes(o.item));
 
-      // ── 현재 주문 (조리중 버튼 포함)
-      document.getElementById('pendingDinein').innerHTML   = pendingI.map(o=>`
+      // 현재 주문
+      document.getElementById('pendingDinein').innerHTML = pendingI.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            ${o.cooking
+          <td>${o.cooking
               ? '<span class="badge bg-warning">조리중</span>'
               : `<button class="btn btn-sm btn-secondary"
                           onclick="startCooking(${o.id})">조리중</button>`
-            }
-          </td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="completeOrder(${o.id})">완료</button>
-          </td>
+            }</td>
+          <td><button class="btn btn-sm btn-success"
+                      onclick="completeOrder(${o.id})">완료</button></td>
         </tr>
       `).join('');
       document.getElementById('pendingDelivery').innerHTML = pendingD.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            ${o.cooking
+          <td>${o.cooking
               ? '<span class="badge bg-warning">조리중</span>'
               : `<button class="btn btn-sm btn-secondary"
                           onclick="startCooking(${o.id})">조리중</button>`
-            }
-          </td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="completeOrder(${o.id})">완료</button>
-          </td>
+            }</td>
+          <td><button class="btn btn-sm btn-success"
+                      onclick="completeOrder(${o.id})">완료</button></td>
         </tr>
       `).join('');
 
-      // ── 완료 주문
+      // 완료 주문
       document.getElementById('completedDinein').innerHTML   = compI.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning"
-                    onclick="cancelComplete(${o.id})">취소</button>
-          </td>
+          <td><button class="btn btn-sm btn-warning"
+                      onclick="cancelComplete(${o.id})">취소</button></td>
         </tr>
       `).join('');
       document.getElementById('completedDelivery').innerHTML = compD.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning"
-                    onclick="cancelComplete(${o.id})">취소</button>
-          </td>
+          <td><button class="btn btn-sm btn-warning"
+                      onclick="cancelComplete(${o.id})">취소</button></td>
         </tr>
       `).join('');
 
-      // ── 떡볶이 탭
+      // 떡볶이 탭
       document.getElementById('pendingTteok').innerHTML   = pendT.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-success"
-                    onclick="startCooking(${o.id})">완료</button>
-          </td>
+          <td><button class="btn btn-sm btn-success"
+                      onclick="completeOrder(${o.id})">완료</button></td>
         </tr>
       `).join('');
       document.getElementById('completedTteok').innerHTML = compT.map(o=>`
         <tr>
           <td>${o.timestamp}</td><td>${o.item}</td><td>${o.quantity}</td>
           <td>${o.toppings.join(',')}</td><td>${o.deliverer}</td><td>${o.address}</td>
-          <td>
-            <button class="btn btn-sm btn-warning"
-                    onclick="cancelComplete(${o.id})">취소</button>
-          </td>
+          <td><button class="btn btn-sm btn-warning"
+                      onclick="cancelComplete(${o.id})">취소</button></td>
         </tr>
       `).join('');
 
-      // ── 매출 분석
+      // 매출 분석
       const salesByItem     = {}, salesByInterval = {};
       compI.concat(compD).forEach(o=>{
         const base = menuPrices[o.item]||0;
@@ -273,7 +282,7 @@
       document.getElementById('salesSummary').textContent =
         `총 매출: ${totalSales.toLocaleString()}원`;
 
-      // ── 떡볶이 매출
+      // 떡볶이 매출
       const tteokSales = compT.reduce((s,o)=>{
         const base = menuPrices[o.item]||0;
         const tSum = o.toppings.reduce((a,t)=>a+(toppingPrices[t]||0),0);

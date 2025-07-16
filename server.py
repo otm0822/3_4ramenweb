@@ -14,6 +14,9 @@ SECRET_PASSWORD = "55983200"
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path="")
 CORS(app)
 
+# ─── 주문 중단 플래그 ─────────────────────────────────────────
+orders_paused = False
+
 # ─── HTTP Basic Auth 헬퍼 ────────────────────────────────────
 def check_auth(password):
     return password == SECRET_PASSWORD
@@ -47,7 +50,7 @@ CREATE TABLE IF NOT EXISTS orders (
     address     TEXT,
     completed   INTEGER DEFAULT 0,
     order_type  TEXT,
-    cooking     INTEGER DEFAULT 0    -- 0:대기, 1:조리중
+    cooking     INTEGER DEFAULT 0
 )
 """)
 conn.commit()
@@ -89,9 +92,13 @@ def list_orders():
 # ─── 주문 등록 ───────────────────────────────────────────────
 @app.route("/api/orders", methods=["POST"])
 def create_order():
+    global orders_paused
+    if orders_paused:
+        return jsonify(status="paused", message="현재 주문이 중단되었습니다."), 403
+
     data = request.get_json()
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    toppings  = ",".join(data.get("toppings", []))
+    toppings   = ",".join(data.get("toppings", []))
     order_type = data.get("orderType", "delivery")
     c.execute("""
       INSERT INTO orders
@@ -129,6 +136,19 @@ def uncomplete_order(order_id):
     c.execute("UPDATE orders SET completed = 0 WHERE id = ?", (order_id,))
     conn.commit()
     return jsonify(status="ok"), 200
+
+# ─── 주문 중단/재개 토글 ─────────────────────────────────────
+@app.route("/api/orders/toggle_pause", methods=["POST"])
+@requires_auth
+def toggle_pause():
+    global orders_paused
+    orders_paused = not orders_paused
+    return jsonify(paused=orders_paused), 200
+
+# ─── 주문 중단 상태 조회 ─────────────────────────────────────
+@app.route("/api/orders/status", methods=["GET"])
+def orders_status():
+    return jsonify(paused=orders_paused), 200
 
 # ─── 앱 실행 ─────────────────────────────────────────────────
 if __name__ == "__main__":
